@@ -1,6 +1,6 @@
 Function 盘口金额();
 Begin
-    day := IntToDate({day_});
+    day := {day_};
 
     with *,array(pn_Stock():'{stockcode_}',PN_Date():day,pn_rate():0,pn_rateday():0) do
     begin
