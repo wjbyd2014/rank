@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 import json
+import os
+import re
 import sys
 import csv
 
 sys.path.append("D:\Tinysoft\Analyse.NET")
 import TSLPy3 as ts
 
+work_dir = "D:\\ts\\"
 
 def tsbytestostr(data):
     if isinstance(data, tuple) or isinstance(data, list):
@@ -54,9 +57,14 @@ def F执行语句(ts_str, pmdict=None, unencode=True):
         return []
     return data1
 
+def F生成天软日期_str(one_day: str):
+    one_day = re.split('[-/]', one_day)
+    ts_day = ts.EncodeDate(int(one_day[0]), int(one_day[1]), int(one_day[2]))
+    return ts_day
+
 
 def F读取脚本文件(filename):
-    with open("D:\\" + filename, 'r', encoding='utf-8') as f:
+    with open(work_dir + filename, 'r', encoding='utf-8') as f:
         ts_str = f.read()
     return ts_str
 
@@ -89,10 +97,9 @@ def F断开服务器():
     print('未连接,无需断开')
 
 
+code_rank = F读取脚本文件("rank.js")
 def count_one_day(day, num):
-    code = F读取脚本文件("rank.js")
-    ts_data = F执行语句(code, {'date': day})
-    # print(ts_data)
+    ts_data = F执行语句(code_rank, {'date': day})
 
     idx = 0
     for data in ts_data:
@@ -158,7 +165,7 @@ def count_one_day(day, num):
     ts_data.sort(key=lambda x: x['score'], reverse=True)
     ts_stocks = [(day, data['股票代码'], data['股票名称'],
                   data['score3'], data['score4'], data['score5'], data['score6'], data['score7'], data['score'],
-                  data['3日涨幅'], data['4日涨幅'], data['5日涨幅'], data['6日涨幅'], data['7日涨幅']
+                  data['3日涨幅'], data['4日涨幅'], data['5日涨幅'], data['6日涨幅'], data['7日涨幅'],
                   ) for data in ts_data if data['score'] > 0]
     return ts_stocks
 
@@ -167,12 +174,88 @@ def get_dates(day):
     code = F读取脚本文件("dates.js")
     return F执行语句(code, {'day': day})
 
+class pkje_cache(object):
+    def __init__(self, code_file_name, csv_file_name):
+        self.cache = dict()
+        self.code = F读取脚本文件(code_file_name)
+        self.csv_file_name = work_dir + csv_file_name
+        self.fieldnames = ['key', '竞价涨幅', '买一价', '盘口金额', '早盘跌停盘口比']
+        self.fd = None
+        self.writer = None
+
+    def build_cache(self):
+        if not os.path.exists(self.csv_file_name):
+            return
+
+        with open(self.csv_file_name, mode='r', newline='') as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                if row['key'] in self.cache:
+                    print('重复key(%s) in pkje_cache' % row['key'])
+                    return
+
+                if row['竞价涨幅'] == 'N/A':
+                    self.cache[row['key']] = None
+                    continue
+
+                jjzf = float(row['竞价涨幅'])
+                myj = float(row['买一价'])
+                pkje = float(row['盘口金额'])
+                zpdtpkb = float(row['早盘跌停盘口比'])
+                self.cache[row['key']] = {'竞价涨幅': jjzf, '买一价': myj, '盘口金额': pkje, '早盘跌停盘口比': zpdtpkb}
+
+    def get(self, key):
+        if key in self.cache:
+            return self.cache[key]
+
+        key_ = key.split('|')
+        if len(key_) != 2:
+            return None
+
+        print('downloading key %s' % key)
+        day = key_[0]
+        stock = key_[1]
+        ret_data = F执行语句(self.code, {'day_': F生成天软日期_str(day), 'stockcode_': stock[2:]})
+
+        if not self.fd:
+            new_file = not os.path.exists(self.csv_file_name)
+            self.fd = open(self.csv_file_name, mode='a', newline='')
+            self.writer = csv.DictWriter(self.fd, fieldnames=self.fieldnames)
+            if new_file:
+                self.writer.writeheader()
+
+        if not ret_data:
+            data = {'key': key,
+                '竞价涨幅': 'N/A',
+                '买一价': 'N/A',
+                '盘口金额': 'N/A',
+                '早盘跌停盘口比': 'N/A' }
+            self.cache[key] = None
+        else:
+            data = {'key': key,
+                '竞价涨幅': ret_data[0]['竞价涨幅'],
+                '买一价': ret_data[0]['买一价'],
+                '盘口金额': ret_data[0]['盘口金额'],
+                '早盘跌停盘口比': ret_data[0]['早盘跌停盘口比']}
+            self.cache[key] = ret_data[0]
+
+        self.writer.writerow(data)
+        return self.cache[key]
+
+    def __del__(self):
+        if self.fd:
+            self.fd.close()
 
 if __name__ == '__main__':
     F断开服务器()
     F连接服务器(b配置文件=True)
 
+    pc = pkje_cache("pankoujine.js", "pankoujine.csv")
+    pc.build_cache()
+
     ret_date = get_dates(20220602)
+
+    #ret_date = ret_date[:5]
 
     ts_dates = [date['date'] for date in ret_date]
     date_key = dict()
@@ -185,22 +268,29 @@ if __name__ == '__main__':
         sub_data_stocks = count_one_day(date, 150)
         date_stocks = date_stocks + sub_data_stocks
 
-    with open('D://股票日期列表.csv', mode='w', newline='') as csv_file:
-        fieldnames = ['key', '日期', '股票代码', '股票名称',
+    with open(work_dir + '股票日期列表.csv', mode='w', newline='') as csv_file:
+        fieldnames = ['key', '日期', '代码', '名称',
                       '3日涨幅', '3日打分',
                       '4日涨幅', '4日打分',
                       '5日涨幅', '5日打分',
                       '6日涨幅', '6日打分',
                       '7日涨幅', '7日打分',
-                      '综合打分']
+                      '综合打分',
+                      '竞价涨幅', '买一价', '盘口金额', '早盘跌停盘口比']
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
         for date_stock in date_stocks:
             date_str = date_key[date_stock[0]]
-            writer.writerow({'key': date_str + '|' + date_stock[1],
+            key = date_str + '|' + date_stock[1]
+            pkje = pc.get(key)
+
+            if not pkje:
+                continue
+
+            writer.writerow({'key': key,
                              '日期': date_str,
-                             '股票代码': date_stock[1],
-                             '股票名称': date_stock[2],
+                             '代码': date_stock[1],
+                             '名称': date_stock[2],
                              '3日涨幅': '%.4f' % date_stock[9],
                              '3日打分': '%.4f' % date_stock[3],
                              '4日涨幅': '%.4f' % date_stock[10],
@@ -211,4 +301,8 @@ if __name__ == '__main__':
                              '6日打分': '%.4f' % date_stock[6],
                              '7日涨幅': '%.4f' % date_stock[13],
                              '7日打分': '%.4f' % date_stock[7],
-                             '综合打分': '%.4f' % date_stock[8]})
+                             '综合打分': '%.4f' % date_stock[8],
+                             '竞价涨幅': '%.4f' % pkje['竞价涨幅'],
+                            '买一价': '%.4f' % pkje['买一价'],
+                            '盘口金额': '%.4f' % pkje['盘口金额'],
+                            '早盘跌停盘口比': '%.4f' % pkje['早盘跌停盘口比']})
