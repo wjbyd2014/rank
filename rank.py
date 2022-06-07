@@ -246,6 +246,44 @@ class pkje_cache(object):
         if self.fd:
             self.fd.close()
 
+class sell_cache(object):
+    def __init__(self, selled_csv_file_name, not_selled_csv_file_name):
+        self.cache = dict()
+        self.selled_csv_file_name = work_dir + selled_csv_file_name
+        self.not_selled_csv_file_name = work_dir + not_selled_csv_file_name
+        self.fieldnames = ['key', '卖出价', '持仓天数']
+
+    def build_cache(self):
+        if not os.path.exists(self.selled_csv_file_name):
+            print("卖出文件未找到")
+            return
+
+        if not os.path.exists(self.not_selled_csv_file_name):
+            print("未卖出文件未找到")
+            return
+
+        for csv_file_name in [ self.selled_csv_file_name, self.not_selled_csv_file_name]:
+            with open(csv_file_name, mode='r', newline='') as csv_file:
+                reader = csv.DictReader(csv_file)
+                for row in reader:
+                    key = row['key']
+                    if key in self.cache:
+                        print('重复key(%s) in sell_cache' % row['key'])
+                        return
+
+                    sell_price = row['卖出价']
+                    hold_day = row['持仓天数']
+                    self.cache[key] = {
+                        'sell_price' : sell_price,
+                        'hold_day' : hold_day
+                    }
+
+    def get(self, key):
+        if not key in self.cache:
+            return None
+        else:
+            return self.cache[key]
+
 if __name__ == '__main__':
     F断开服务器()
     F连接服务器(b配置文件=True)
@@ -253,9 +291,10 @@ if __name__ == '__main__':
     pc = pkje_cache("pankoujine.js", "pankoujine.csv")
     pc.build_cache()
 
-    ret_date = get_dates(20220602)
+    sc = sell_cache('卖出明细30.csv', '卖出明细30_未完全卖出.csv')
+    sc.build_cache()
 
-    #ret_date = ret_date[:5]
+    ret_date = get_dates(20220602)
 
     ts_dates = [date['date'] for date in ret_date]
     date_key = dict()
@@ -286,6 +325,12 @@ if __name__ == '__main__':
 
             if not pkje:
                 continue
+
+            sell = sc.get(key)
+            if not sell:
+                print("key %s 没有找到卖出价，名称 = %s" % (key, date_stock[2]))
+            else:
+                print("key %s 找到卖出价，名称 = %s" % (key, date_stock[2]))
 
             writer.writerow({'key': key,
                              '日期': date_str,
