@@ -10,6 +10,7 @@ import TSLPy3 as ts
 
 work_dir = "D:\\ts\\"
 
+
 def tsbytestostr(data):
     if isinstance(data, tuple) or isinstance(data, list):
         lent = len(data)
@@ -57,6 +58,7 @@ def F执行语句(ts_str, pmdict=None, unencode=True):
         return []
     return data1
 
+
 def F生成天软日期_str(one_day: str):
     one_day = re.split('[-/]', one_day)
     ts_day = ts.EncodeDate(int(one_day[0]), int(one_day[1]), int(one_day[2]))
@@ -98,12 +100,15 @@ def F断开服务器():
 
 
 code_rank = F读取脚本文件("rank.js")
-def count_one_day(day, num):
+
+
+def count_one_day(day, num, pc, sc, date_str):
     ts_data = F执行语句(code_rank, {'date': day})
 
     idx = 0
     for data in ts_data:
         data['index'] = idx
+        data['key'] = date_str + '|' + data['股票代码']
         data['score'] = 0
         data['score3'] = 0
         data['score4'] = 0
@@ -163,16 +168,45 @@ def count_one_day(day, num):
         rk = rk + 1
 
     ts_data.sort(key=lambda x: x['score'], reverse=True)
-    ts_stocks = [(day, data['股票代码'], data['股票名称'],
-                  data['score3'], data['score4'], data['score5'], data['score6'], data['score7'], data['score'],
-                  data['3日涨幅'], data['4日涨幅'], data['5日涨幅'], data['6日涨幅'], data['7日涨幅'],
-                  ) for data in ts_data if data['score'] > 0]
+    ts_stocks = list()
+
+    for data in ts_data:
+        if data['score'] == 0:
+            continue
+
+        pkje = pc.get(data['key'])
+        if not pkje:
+            continue
+
+        sell = sc.get(data['key'])
+        if not sell:
+            print('drop key:' + data['key'])
+            continue
+
+        data['竞价涨幅'] = pkje['竞价涨幅']
+        data['买一价'] = pkje['买一价']
+        data['盘口金额'] = pkje['盘口金额']
+        data['早盘跌停盘口比'] = pkje['早盘跌停盘口比']
+        data['卖出价'] = sell['sell_price']
+        data['卖出日期'] = sell['sell_day']
+        ts_stocks.append(data)
+
+    for sort_key, head in [('score3', '3日'), ('score4', '4日'), ('score5', '5日'), ('score6', '6日'), ('score7', '7日'),
+                           ('score', '总打分')]:
+        count_earings(ts_stocks, sort_key, head)
     return ts_stocks
+
+
+def count_earings(stock_data, sort_key, head):
+    rank_stock_day = stock_data.copy()
+    rank_stock_day.sort(key=lambda x: x[sort_key], reverse=True)
+    pass
 
 
 def get_dates(day):
     code = F读取脚本文件("dates.js")
     return F执行语句(code, {'day': day})
+
 
 class pkje_cache(object):
     def __init__(self, code_file_name, csv_file_name):
@@ -185,14 +219,14 @@ class pkje_cache(object):
 
     def build_cache(self):
         if not os.path.exists(self.csv_file_name):
-            return
+            return False
 
         with open(self.csv_file_name, mode='r', newline='') as csv_file:
             reader = csv.DictReader(csv_file)
             for row in reader:
                 if row['key'] in self.cache:
                     print('重复key(%s) in pkje_cache' % row['key'])
-                    return
+                    return False
 
                 if row['竞价涨幅'] == 'N/A':
                     self.cache[row['key']] = None
@@ -203,6 +237,8 @@ class pkje_cache(object):
                 pkje = float(row['盘口金额'])
                 zpdtpkb = float(row['早盘跌停盘口比'])
                 self.cache[row['key']] = {'竞价涨幅': jjzf, '买一价': myj, '盘口金额': pkje, '早盘跌停盘口比': zpdtpkb}
+
+        return True
 
     def get(self, key):
         if key in self.cache:
@@ -225,18 +261,19 @@ class pkje_cache(object):
                 self.writer.writeheader()
 
         if not ret_data:
-            data = {'key': key,
-                '竞价涨幅': 'N/A',
-                '买一价': 'N/A',
-                '盘口金额': 'N/A',
-                '早盘跌停盘口比': 'N/A' }
+            data = {
+                'key': key,
+                '竞价涨幅': 'N/A'
+            }
             self.cache[key] = None
         else:
-            data = {'key': key,
+            data = {
+                'key': key,
                 '竞价涨幅': ret_data[0]['竞价涨幅'],
                 '买一价': ret_data[0]['买一价'],
                 '盘口金额': ret_data[0]['盘口金额'],
-                '早盘跌停盘口比': ret_data[0]['早盘跌停盘口比']}
+                '早盘跌停盘口比': ret_data[0]['早盘跌停盘口比']
+            }
             self.cache[key] = ret_data[0]
 
         self.writer.writerow(data)
@@ -246,37 +283,39 @@ class pkje_cache(object):
         if self.fd:
             self.fd.close()
 
+
 class sell_cache(object):
     def __init__(self, selled_csv_file_name, not_selled_csv_file_name):
         self.cache = dict()
         self.selled_csv_file_name = work_dir + selled_csv_file_name
         self.not_selled_csv_file_name = work_dir + not_selled_csv_file_name
-        self.fieldnames = ['key', '卖出价', '持仓天数']
 
     def build_cache(self):
         if not os.path.exists(self.selled_csv_file_name):
             print("卖出文件未找到")
-            return
+            return False
 
         if not os.path.exists(self.not_selled_csv_file_name):
             print("未卖出文件未找到")
-            return
+            return False
 
-        for csv_file_name in [ self.selled_csv_file_name, self.not_selled_csv_file_name]:
+        for csv_file_name in [self.selled_csv_file_name, self.not_selled_csv_file_name]:
             with open(csv_file_name, mode='r', newline='') as csv_file:
                 reader = csv.DictReader(csv_file)
                 for row in reader:
                     key = row['key']
                     if key in self.cache:
                         print('重复key(%s) in sell_cache' % row['key'])
-                        return
+                        return False
 
                     sell_price = row['卖出价']
-                    hold_day = row['持仓天数']
+                    sell_day = row['卖出日期']
                     self.cache[key] = {
-                        'sell_price' : sell_price,
-                        'hold_day' : hold_day
+                        'sell_price': float(sell_price),
+                        'sell_day': sell_day
                     }
+
+        return True
 
     def get(self, key):
         if not key in self.cache:
@@ -284,15 +323,18 @@ class sell_cache(object):
         else:
             return self.cache[key]
 
+
 if __name__ == '__main__':
     F断开服务器()
     F连接服务器(b配置文件=True)
 
     pc = pkje_cache("pankoujine.js", "pankoujine.csv")
-    pc.build_cache()
+    if not pc.build_cache():
+        exit(0)
 
     sc = sell_cache('卖出明细30.csv', '卖出明细30_未完全卖出.csv')
-    sc.build_cache()
+    if not sc.build_cache():
+        exit(0)
 
     ret_date = get_dates(20220602)
 
@@ -304,50 +346,46 @@ if __name__ == '__main__':
     date_stocks = list()
     for date in ts_dates:
         print("counting ", date)
-        sub_data_stocks = count_one_day(date, 150)
+        sub_data_stocks = count_one_day(date, 150, pc, sc, date_key[date])
         date_stocks = date_stocks + sub_data_stocks
 
+    droped_key = list()
     with open(work_dir + '股票日期列表.csv', mode='w', newline='') as csv_file:
         fieldnames = ['key', '日期', '代码', '名称',
-                      '3日涨幅', '3日打分',
-                      '4日涨幅', '4日打分',
-                      '5日涨幅', '5日打分',
-                      '6日涨幅', '6日打分',
-                      '7日涨幅', '7日打分',
-                      '综合打分',
-                      '竞价涨幅', '买一价', '盘口金额', '早盘跌停盘口比']
+                      '买入价', '卖出价', '卖出日期',
+                      '3日涨幅', '3日打分', '3日买入金额', '3日盈亏金额', '3日盈亏比',
+                      '4日涨幅', '4日打分', '4日买入金额', '4日盈亏金额', '4日盈亏比',
+                      '5日涨幅', '5日打分', '5日买入金额', '5日盈亏金额', '5日盈亏比',
+                      '6日涨幅', '6日打分', '6日买入金额', '6日盈亏金额', '6日盈亏比',
+                      '7日涨幅', '7日打分', '7日买入金额', '7日盈亏金额', '7日盈亏比',
+                      '总打分', '总打分买入金额', '总打分盈亏金额', '总打分盈亏比',
+                      '竞价涨幅', '买一价', '盘口金额', '早盘跌停盘口比',
+                      ]
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
         for date_stock in date_stocks:
-            date_str = date_key[date_stock[0]]
-            key = date_str + '|' + date_stock[1]
-            pkje = pc.get(key)
+            writer.writerow({'key': date_stock['key'],
+                             '日期': date_stock['key'].split('|')[0],
+                             '代码': date_stock['key'].split('|')[1],
+                             '名称': date_stock['股票名称'],
+                             '买入价': '%.4f' % date_stock['开盘价'],
+                             '卖出价': '%.4f' % date_stock['卖出价'],
+                             '卖出日期': date_stock['卖出日期'],
+                             '3日涨幅': '%.4f' % date_stock['3日涨幅'],
+                             '3日打分': '%.4f' % date_stock['score3'],
+                             '4日涨幅': '%.4f' % date_stock['4日涨幅'],
+                             '4日打分': '%.4f' % date_stock['score4'],
+                             '5日涨幅': '%.4f' % date_stock['5日涨幅'],
+                             '5日打分': '%.4f' % date_stock['score5'],
+                             '6日涨幅': '%.4f' % date_stock['6日涨幅'],
+                             '6日打分': '%.4f' % date_stock['score6'],
+                             '7日涨幅': '%.4f' % date_stock['7日涨幅'],
+                             '7日打分': '%.4f' % date_stock['score7'],
+                             '总打分': '%.4f' % date_stock['score'],
+                             '竞价涨幅': '%.4f' % date_stock['竞价涨幅'],
+                             '买一价': '%.4f' % date_stock['买一价'],
+                             '盘口金额': '%.4f' % date_stock['盘口金额'],
+                             '早盘跌停盘口比': '%.4f' % date_stock['早盘跌停盘口比'],
+                             })
 
-            if not pkje:
-                continue
-
-            sell = sc.get(key)
-            if not sell:
-                print("key %s 没有找到卖出价，名称 = %s" % (key, date_stock[2]))
-            else:
-                print("key %s 找到卖出价，名称 = %s" % (key, date_stock[2]))
-
-            writer.writerow({'key': key,
-                             '日期': date_str,
-                             '代码': date_stock[1],
-                             '名称': date_stock[2],
-                             '3日涨幅': '%.4f' % date_stock[9],
-                             '3日打分': '%.4f' % date_stock[3],
-                             '4日涨幅': '%.4f' % date_stock[10],
-                             '4日打分': '%.4f' % date_stock[4],
-                             '5日涨幅': '%.4f' % date_stock[11],
-                             '5日打分': '%.4f' % date_stock[5],
-                             '6日涨幅': '%.4f' % date_stock[12],
-                             '6日打分': '%.4f' % date_stock[6],
-                             '7日涨幅': '%.4f' % date_stock[13],
-                             '7日打分': '%.4f' % date_stock[7],
-                             '综合打分': '%.4f' % date_stock[8],
-                             '竞价涨幅': '%.4f' % pkje['竞价涨幅'],
-                            '买一价': '%.4f' % pkje['买一价'],
-                            '盘口金额': '%.4f' % pkje['盘口金额'],
-                            '早盘跌停盘口比': '%.4f' % pkje['早盘跌停盘口比']})
+    print("droped keys: ", droped_key)
