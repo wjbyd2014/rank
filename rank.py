@@ -233,8 +233,6 @@ def count_earings(stock_data, sort_key, head):
         if left_money == 0:
             break
 
-    print("left_money = %d" % left_money)
-
 def get_dates(day):
     code = F读取脚本文件("dates.js")
     return F执行语句(code, {'day': day})
