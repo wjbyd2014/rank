@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import json
 import os
 import re
@@ -100,9 +99,11 @@ def F断开服务器():
 
 
 code_rank = F读取脚本文件("rank.js")
+drop_num = 0
 
 
 def count_one_day(day, num, pc, sc, date_str):
+    global drop_num
     ts_data = F执行语句(code_rank, {'date': day})
 
     idx = 0
@@ -181,6 +182,7 @@ def count_one_day(day, num, pc, sc, date_str):
         sell = sc.get(data['key'])
         if not sell:
             print('drop key:' + data['key'])
+            drop_num += 1
             continue
 
         data['竞价涨幅'] = pkje['竞价涨幅']
@@ -198,10 +200,40 @@ def count_one_day(day, num, pc, sc, date_str):
 
 
 def count_earings(stock_data, sort_key, head):
-    rank_stock_day = stock_data.copy()
-    rank_stock_day.sort(key=lambda x: x[sort_key], reverse=True)
-    pass
+    left_money = 3000 * 10000
+    rank_stock_data = stock_data.copy()
+    rank_stock_data.sort(key=lambda x: x[sort_key], reverse=True)
 
+    for data in rank_stock_data:
+        if data['盘口金额'] < 200 or data['竞价涨幅'] > 3 or data['早盘跌停盘口比'] > 1.1:
+            continue
+
+        if data['股票代码'][2:5] == '688':
+            lots_mod = 200
+        else:
+            lots_mod = 100
+
+        open_price = data['开盘价']
+        use_money = data['盘口金额'] * 0.1 * 10000
+        buy_lots = use_money // open_price
+        buy_lots = buy_lots // lots_mod * lots_mod
+        use_money = round(buy_lots * open_price)
+        real_use_money = use_money * 1.00022  # 手续费+印花税
+
+        if real_use_money < left_money:
+            left_money -= real_use_money
+            data[head + '买入金额'] = use_money
+            real_sell_money = buy_lots * data['卖出价'] * (1 - 0.00012)
+            data[head + '盈亏比'] = (real_sell_money / real_use_money - 1) * 100
+            data[head + '盈亏金额'] = round(real_sell_money - real_use_money)
+        else:
+            # 剩的钱不够买10%或不够100/200股怎么办？
+            pass
+
+        if left_money == 0:
+            break
+
+    print("left_money = %d" % left_money)
 
 def get_dates(day):
     code = F读取脚本文件("dates.js")
@@ -364,7 +396,7 @@ if __name__ == '__main__':
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
         for date_stock in date_stocks:
-            writer.writerow({'key': date_stock['key'],
+            row_data = {'key': date_stock['key'],
                              '日期': date_stock['key'].split('|')[0],
                              '代码': date_stock['key'].split('|')[1],
                              '名称': date_stock['股票名称'],
@@ -386,6 +418,11 @@ if __name__ == '__main__':
                              '买一价': '%.4f' % date_stock['买一价'],
                              '盘口金额': '%.4f' % date_stock['盘口金额'],
                              '早盘跌停盘口比': '%.4f' % date_stock['早盘跌停盘口比'],
-                             })
-
-    print("droped keys: ", droped_key)
+                             }
+            for head in [ '3日', '4日', '5日', '6日', '7日', '总打分' ]:
+                if head + '盈亏金额' in date_stock:
+                    row_data[head + '盈亏金额'] = date_stock[head + '盈亏金额']
+                    row_data[head + '盈亏比'] = '%.4f' %  date_stock[head + '盈亏比']
+                    row_data[head + '买入金额'] = date_stock[head + '买入金额']
+            writer.writerow(row_data)
+    print("drop_num = %d" % drop_num)
