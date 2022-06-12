@@ -3,6 +3,9 @@ import os
 import re
 import sys
 import csv
+import pandas as pd
+import matplotlib
+import matplotlib.pyplot as plt
 
 sys.path.append("D:\Tinysoft\Analyse.NET")
 import TSLPy3 as ts
@@ -205,7 +208,7 @@ def count_earings(stock_data, sort_key, head):
     rank_stock_data.sort(key=lambda x: x[sort_key], reverse=True)
 
     for data in rank_stock_data:
-        if data['盘口金额'] < 200 or data['竞价涨幅'] > 3 or data['早盘跌停盘口比'] > 1.1:
+        if data['盘口金额'] < 200 or data['竞价涨幅'] > 7 or data['早盘跌停盘口比'] > 1.1:
             continue
 
         if data['股票代码'][2:5] == '688':
@@ -213,25 +216,34 @@ def count_earings(stock_data, sort_key, head):
         else:
             lots_mod = 100
 
-        open_price = data['开盘价']
+        # 先按盘口金额的10%和开盘价买，手数要按100手和200手对齐
         use_money = data['盘口金额'] * 0.1 * 10000
-        buy_lots = use_money // open_price
+
+        # 剩的钱不够盘口金额的10%了，有多少买多少
+        if use_money > left_money:
+            use_money = left_money
+
+        buy_price = data['开盘价']
+        buy_lots = use_money // buy_price
         buy_lots = buy_lots // lots_mod * lots_mod
-        use_money = round(buy_lots * open_price)
+
+        # 不足100或者200手的钱，就放弃这个股票，看下一个
+        if buy_lots == 0:
+            continue
+
+        use_money = round(buy_lots * buy_price)
         real_use_money = use_money * 1.00022  # 手续费+印花税
 
-        if real_use_money < left_money:
-            left_money -= real_use_money
-            data[head + '买入金额'] = use_money
-            real_sell_money = buy_lots * data['卖出价'] * (1 - 0.00012)
-            data[head + '盈亏比'] = (real_sell_money / real_use_money - 1) * 100
-            data[head + '盈亏金额'] = round(real_sell_money - real_use_money)
-        else:
-            # 剩的钱不够买10%或不够100/200股怎么办？
-            pass
+        # 加了印花税和手续费后，可能不够钱买了，跳过
+        if real_use_money > left_money:
+            continue
 
-        if left_money == 0:
-            break
+        left_money -= real_use_money
+        data[head + '买入金额'] = use_money
+        real_sell_money = buy_lots * data['卖出价'] * (1 - 0.00012)
+        data[head + '盈亏比'] = (real_sell_money / real_use_money - 1) * 100
+        data[head + '盈亏金额'] = round(real_sell_money - real_use_money)
+
 
 def get_dates(day):
     code = F读取脚本文件("dates.js")
@@ -348,24 +360,13 @@ class sell_cache(object):
         return True
 
     def get(self, key):
-        if not key in self.cache:
-            return None
-        else:
+        if key in self.cache:
             return self.cache[key]
+        else:
+            return None
 
 
-if __name__ == '__main__':
-    F断开服务器()
-    F连接服务器(b配置文件=True)
-
-    pc = pkje_cache("pankoujine.js", "pankoujine.csv")
-    if not pc.build_cache():
-        exit(0)
-
-    sc = sell_cache('卖出明细30.csv', '卖出明细30_未完全卖出.csv')
-    if not sc.build_cache():
-        exit(0)
-
+def 运行打分策略(pc, sc):
     ret_date = get_dates(20220602)
 
     ts_dates = [date['date'] for date in ret_date]
@@ -379,7 +380,6 @@ if __name__ == '__main__':
         sub_data_stocks = count_one_day(date, 150, pc, sc, date_key[date])
         date_stocks = date_stocks + sub_data_stocks
 
-    droped_key = list()
     with open(work_dir + '股票日期列表.csv', mode='w', newline='') as csv_file:
         fieldnames = ['key', '日期', '代码', '名称',
                       '买入价', '卖出价', '卖出日期',
@@ -395,32 +395,55 @@ if __name__ == '__main__':
         writer.writeheader()
         for date_stock in date_stocks:
             row_data = {'key': date_stock['key'],
-                             '日期': date_stock['key'].split('|')[0],
-                             '代码': date_stock['key'].split('|')[1],
-                             '名称': date_stock['股票名称'],
-                             '买入价': '%.4f' % date_stock['开盘价'],
-                             '卖出价': '%.4f' % date_stock['卖出价'],
-                             '卖出日期': date_stock['卖出日期'],
-                             '3日涨幅': '%.4f' % date_stock['3日涨幅'],
-                             '3日打分': '%.4f' % date_stock['score3'],
-                             '4日涨幅': '%.4f' % date_stock['4日涨幅'],
-                             '4日打分': '%.4f' % date_stock['score4'],
-                             '5日涨幅': '%.4f' % date_stock['5日涨幅'],
-                             '5日打分': '%.4f' % date_stock['score5'],
-                             '6日涨幅': '%.4f' % date_stock['6日涨幅'],
-                             '6日打分': '%.4f' % date_stock['score6'],
-                             '7日涨幅': '%.4f' % date_stock['7日涨幅'],
-                             '7日打分': '%.4f' % date_stock['score7'],
-                             '总打分': '%.4f' % date_stock['score'],
-                             '竞价涨幅': '%.4f' % date_stock['竞价涨幅'],
-                             '买一价': '%.4f' % date_stock['买一价'],
-                             '盘口金额': '%.4f' % date_stock['盘口金额'],
-                             '早盘跌停盘口比': '%.4f' % date_stock['早盘跌停盘口比'],
-                             }
-            for head in [ '3日', '4日', '5日', '6日', '7日', '总打分' ]:
+                        '日期': date_stock['key'].split('|')[0],
+                        '代码': date_stock['key'].split('|')[1],
+                        '名称': date_stock['股票名称'],
+                        '买入价': '%.4f' % date_stock['开盘价'],
+                        '卖出价': '%.4f' % date_stock['卖出价'],
+                        '卖出日期': date_stock['卖出日期'],
+                        '3日涨幅': '%.4f' % date_stock['3日涨幅'],
+                        '3日打分': '%.4f' % date_stock['score3'],
+                        '4日涨幅': '%.4f' % date_stock['4日涨幅'],
+                        '4日打分': '%.4f' % date_stock['score4'],
+                        '5日涨幅': '%.4f' % date_stock['5日涨幅'],
+                        '5日打分': '%.4f' % date_stock['score5'],
+                        '6日涨幅': '%.4f' % date_stock['6日涨幅'],
+                        '6日打分': '%.4f' % date_stock['score6'],
+                        '7日涨幅': '%.4f' % date_stock['7日涨幅'],
+                        '7日打分': '%.4f' % date_stock['score7'],
+                        '总打分': '%.4f' % date_stock['score'],
+                        '竞价涨幅': '%.4f' % date_stock['竞价涨幅'],
+                        '买一价': '%.4f' % date_stock['买一价'],
+                        '盘口金额': '%.4f' % date_stock['盘口金额'],
+                        '早盘跌停盘口比': '%.4f' % date_stock['早盘跌停盘口比'],
+                        }
+            for head in ['3日', '4日', '5日', '6日', '7日', '总打分']:
                 if head + '盈亏金额' in date_stock:
                     row_data[head + '盈亏金额'] = date_stock[head + '盈亏金额']
-                    row_data[head + '盈亏比'] = '%.4f' %  date_stock[head + '盈亏比']
+                    row_data[head + '盈亏比'] = '%.4f' % date_stock[head + '盈亏比']
                     row_data[head + '买入金额'] = date_stock[head + '买入金额']
             writer.writerow(row_data)
     print("drop_num = %d" % drop_num)
+
+
+def draw():
+    matplotlib.rcParams['font.sans-serif'] = ['SimHei']
+    matplotlib.rcParams['font.family'] = 'sans-serif'
+    matplotlib.rcParams['axes.unicode_minus'] = False
+    data = {'0602': [100, 30], '0603': [200, 50], '0604': [300, 15], '0605': [200, 88], '0606': [100, 40]}
+    df = pd.DataFrame(data.values(), index=data.keys(), columns=['3日收益', '4日收益'])
+    df.plot()
+    plt.show()
+
+
+if __name__ == '__main__':
+    F断开服务器()
+    F连接服务器(b配置文件=True)
+
+    pc = pkje_cache("pankoujine.js", "pankoujine.csv")
+    if not pc.build_cache():
+        exit(0)
+
+    sc = sell_cache('卖出明细30.csv', '卖出明细30_未完全卖出.csv')
+    if not sc.build_cache():
+        exit(0)
