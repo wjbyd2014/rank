@@ -102,11 +102,9 @@ def F断开服务器():
 
 
 code_rank = F读取脚本文件("rank.js")
-drop_num = 0
 
 
-def count_one_day(day, num, pc, sc, date_str):
-    global drop_num
+def count_one_day_score(day, num, pc, sc, date_str):
     ts_data = F执行语句(code_rank, {'date': day})
 
     idx = 0
@@ -185,7 +183,6 @@ def count_one_day(day, num, pc, sc, date_str):
         sell = sc.get(data['key'])
         if not sell:
             print('drop key:' + data['key'])
-            drop_num += 1
             continue
 
         data['竞价涨幅'] = pkje['竞价涨幅']
@@ -366,7 +363,15 @@ class sell_cache(object):
             return None
 
 
-def 运行打分策略(pc, sc):
+def 运行打分策略():
+    pc = pkje_cache("pankoujine.js", "pankoujine.csv")
+    if not pc.build_cache():
+        return
+
+    sc = sell_cache('卖出明细30.csv', '卖出明细30_未完全卖出.csv')
+    if not sc.build_cache():
+        return
+
     ret_date = get_dates(20220602)
 
     ts_dates = [date['date'] for date in ret_date]
@@ -377,7 +382,7 @@ def 运行打分策略(pc, sc):
     date_stocks = list()
     for date in ts_dates:
         print("counting ", date)
-        sub_data_stocks = count_one_day(date, 150, pc, sc, date_key[date])
+        sub_data_stocks = count_one_day_score(date, 150, pc, sc, date_key[date])
         date_stocks = date_stocks + sub_data_stocks
 
     with open(work_dir + '股票日期列表.csv', mode='w', newline='') as csv_file:
@@ -423,7 +428,6 @@ def 运行打分策略(pc, sc):
                     row_data[head + '盈亏比'] = '%.4f' % date_stock[head + '盈亏比']
                     row_data[head + '买入金额'] = date_stock[head + '买入金额']
             writer.writerow(row_data)
-    print("drop_num = %d" % drop_num)
 
 
 def draw():
@@ -432,18 +436,147 @@ def draw():
     matplotlib.rcParams['axes.unicode_minus'] = False
     data = {'0602': [100, 30], '0603': [200, 50], '0604': [300, 15], '0605': [200, 88], '0606': [100, 40]}
     df = pd.DataFrame(data.values(), index=data.keys(), columns=['3日收益', '4日收益'])
-    df.plot()
+    df.plot(rot=90)
     plt.show()
+
+
+code_lianban = F读取脚本文件("lianban.js")
+
+
+def count_one_day_连板(day, date_str):
+    ts_data = F执行语句(code_lianban, {'day': day, 'num': 2, 'backtrace_num': 3})
+
+    for data in ts_data:
+        data['key'] = date_str + '|' + data['代码']
+
+    return ts_data
+
+
+def 运行连板策略():
+    ret_date = get_dates(20220616)
+
+    ts_dates = [date['date'] for date in ret_date]
+    date_key = dict()
+    for date in ret_date:
+        date_key[date['date']] = date['datestr']
+
+    date_stocks = list()
+    for date in ts_dates:
+        print("counting ", date)
+        sub_data_stocks = count_one_day_连板(date, date_key[date])
+        date_stocks = date_stocks + sub_data_stocks
+
+    with open(work_dir + '连板股票池.csv', mode='w', newline='') as csv_file:
+        fieldnames = ['key', '日期', '代码', '名称',
+                      '昨日连板涨幅', '前日连板涨幅', '昨日涨幅', '7日平均涨幅',
+                      '昨日成交量', '前N日平均成交量', '入选原因'
+                      ]
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        for date_stock in date_stocks:
+            row_data = {'key': date_stock['key'],
+                        '日期': date_stock['key'].split('|')[0],
+                        '代码': date_stock['代码'],
+                        '名称': date_stock['名称'],
+                        '昨日连板涨幅': date_stock['昨日连板涨幅'],
+                        '前日连板涨幅': date_stock['前日连板涨幅'],
+                        '昨日涨幅': date_stock['昨日涨幅'],
+                        '7日平均涨幅': date_stock['7日平均涨幅'],
+                        '昨日成交量': date_stock['昨日成交量'],
+                        '前N日平均成交量': date_stock['前N日平均成交量'],
+                        '入选原因': date_stock['入选原因']
+                        }
+            writer.writerow(row_data)
+
+
+class minute_cache(object):
+    def __init__(self, minute_csv_file_name, fieldnames):
+        self.cache = dict()
+        self.minute_csv_file_name = work_dir + minute_csv_file_name
+        self.fieldnames = fieldnames
+        self.fd = None
+        self.writer = None
+
+    def build_cache(self):
+        if not os.path.exists(self.minute_csv_file_name):
+            return True
+
+        with open(self.minute_csv_file_name, mode='r', newline='') as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                date = row['日期']
+                if date not in self.cache:
+                    self.cache[date] = list()
+                self.cache[date].append(row)
+
+        return True
+
+    def get(self, day, date_str):
+        if date_str in self.cache:
+            return self.cache[date_str]
+        else:
+            ret = count_one_day_分钟线(day, date_str)
+            if not self.fd:
+                new_file = not os.path.exists(self.minute_csv_file_name)
+                self.fd = open(self.minute_csv_file_name, mode='a', newline='')
+                self.writer = csv.DictWriter(self.fd, fieldnames=self.fieldnames)
+                if new_file:
+                    self.writer.writeheader()
+
+            for row in ret:
+                self.writer.writerow(row)
+            return ret
+
+    def __del__(self):
+        if self.fd:
+            self.fd.close()
+
+
+code_fenzhongxian = F读取脚本文件("fenzhongxian.js")
+
+
+def count_one_day_分钟线(day, date_str):
+    ts_data = F执行语句(code_fenzhongxian, {'day': day})
+
+    for data in ts_data:
+        data['key'] = date_str + '|' + data['代码']
+        data['日期'] = date_str
+
+    return ts_data
+
+
+def 运行分钟线策略():
+    fieldnames = ['key', '日期', '代码', '名称',
+                  '最高价涨幅', '最后均价涨幅', '最后收盘价涨幅',
+                  '白线过3%分钟数', '白线高于黄线分钟数']
+
+    mc = minute_cache("分钟线股票池.csv", fieldnames)
+    mc.build_cache()
+
+    ret_date = get_dates(20220617)
+
+    ts_dates = [date['date'] for date in ret_date]
+    date_key = dict()
+    for date in ret_date:
+        date_key[date['date']] = date['datestr']
+
+    date_stocks = list()
+    for date in ts_dates:
+        print("counting ", date)
+        sub_data_stocks = mc.get(date, date_key[date])
+        date_stocks = date_stocks + sub_data_stocks
+
+    with open(work_dir + '分钟线策略.csv', mode='w', newline='') as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        for date_stock in date_stocks:
+            row_data = dict()
+            for field in fieldnames:
+                row_data[field] = date_stock[field]
+            writer.writerow(row_data)
 
 
 if __name__ == '__main__':
     F断开服务器()
     F连接服务器(b配置文件=True)
-
-    pc = pkje_cache("pankoujine.js", "pankoujine.csv")
-    if not pc.build_cache():
-        exit(0)
-
-    sc = sell_cache('卖出明细30.csv', '卖出明细30_未完全卖出.csv')
-    if not sc.build_cache():
-        exit(0)
+    运行分钟线策略()
