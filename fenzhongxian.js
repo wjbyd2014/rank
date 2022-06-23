@@ -5,10 +5,10 @@ Begin
     最高价最少涨幅阈值 := 5;
     最后收盘价最少涨幅阈值 := 2.5;
     最后均价最少涨幅阈值 := 2.5;
-    白线维持拉高次数 := 20;
+    白线维持拉高次数 := 18;
     白线拉高阈值 := 3;
     黄白线响度高度开始计算时间 := "10:00:00";
-    白线维持高于黄线次数 := 20;
+    白线维持高于黄线次数 := 18;
     白线无视黄线阈值 := 3;
 
     ret := array();
@@ -77,14 +77,11 @@ begin
     with *,array(pn_Stock():stock_code, pn_rate():2, pn_rateday():day, PN_Cycle():cy_1m()) do
     begin
         data := select
-            ["StockID"] as "代码",
-            ["StockName"] as "名称",
             TimeToStr(["date"]) as "时间",
-            ["open"] as "开盘价",
             ["high"] as "最高价",
             ["price"] as "收盘价",
             ['sectional_amount']/['sectional_vol'] as "均价"
-        from markettable datekey day to day+0.99999 of DefaultStockID() where timetostr(timeof(['date'])) <= "10:30:00"  end;
+        from markettable datekey day to day+0.99999 of DefaultStockID() where timetostr(timeof(['date'])) <= "10:25:00"  end;
     end
 
     最高价 := 0;
