@@ -345,7 +345,7 @@ class sell_cache(object):
                     key = row['key']
                     if key in self.cache:
                         print('重复key(%s) in sell_cache' % row['key'])
-                        return False
+                        continue
 
                     sell_price = row['卖出价']
                     sell_day = row['卖出日期']
@@ -513,8 +513,6 @@ class minute_cache(object):
 
     def get(self, day, date_str):
         if date_str in self.cache:
-            for data in self.cache[date_str]:
-                data['day'] = day
             return self.cache[date_str]
         else:
             ret = count_one_day_分钟线(day, date_str)
@@ -543,7 +541,6 @@ def count_one_day_分钟线(day, date_str):
     for data in ts_data:
         data['key'] = date_str + '|' + data['代码']
         data['日期'] = date_str
-        data['day'] = day
 
     return ts_data
 
@@ -580,6 +577,8 @@ class buy_cache(object):
             if len(key_) != 2:
                 return None
 
+            print("计算分钟线买入，key = %s" % key_)
+
             day = key_[0]
             stock = key_[1]
             ret_data = F执行语句(self.code, {'day': F生成天软日期_str(day), 'stock_code': stock[2:]})
@@ -612,14 +611,16 @@ def count_earings_分钟线(date_stock, sc, bc):
     date_stock['盈亏金额'] = 0
     date_stock['盈亏比'] = 0
 
-    sell_ret = sc.get(key)
-    if not sell_ret:
-        print("key %s 找不到卖出价" % key)
-        return
+    print("计算分钟线收益，key = %s" % key)
 
     buy_ret = bc.get(key)
     if not buy_ret:
         print('key %s 计算买入失败' % key)
+        return
+
+    sell_ret = sc.get(key)
+    if not sell_ret:
+        print("key %s 找不到卖出价" % key)
         return
 
     date_stock['买入价'] = float(buy_ret['买入价'])
