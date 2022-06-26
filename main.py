@@ -636,7 +636,7 @@ def count_earings_分钟线(date_stocks, date, sc, bc):
         sell_ret = sc.get(key)
         if not sell_ret:
             print("key %s 找不到卖出价" % key)
-            return
+            continue
 
         should_return = False
         if date_stock['买入金额'] > max_use_money_per_stock:
@@ -647,7 +647,7 @@ def count_earings_分钟线(date_stocks, date, sc, bc):
             date_stock['买入量'] = int(left_money / date_stock['买入价'])
 
             if date_stock['买入量'] == 0:
-                date_stock['买入金额'] = 0
+                date_stock['买入金额'] = date_stock['买入量'] = 0
                 return ret
 
             date_stock['买入金额'] = math.ceil(date_stock['买入量'] * date_stock['买入价'])
@@ -658,8 +658,8 @@ def count_earings_分钟线(date_stocks, date, sc, bc):
         date_stock['卖出价'] = sell_ret['卖出价']
         date_stock['卖出日期'] = sell_ret['卖出日期']
 
-        real_use_money = round(use_money * 1.00012)  # 手续费+印花税
-        real_sell_money = date_stock['买入量'] * date_stock['卖出价'] * (1 - 0.00022)
+        real_use_money = round(use_money * 1.00012)  # 手续费
+        real_sell_money = date_stock['买入量'] * date_stock['卖出价'] * (1 - 0.00022) #手续费+印花税
         date_stock['盈亏比'] = round((real_sell_money / real_use_money - 1) * 100, 2)
         date_stock['盈亏金额'] = round(real_sell_money - real_use_money)
         ret += date_stock['盈亏金额']
