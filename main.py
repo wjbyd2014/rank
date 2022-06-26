@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import csv
+import math
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
@@ -332,11 +333,11 @@ class sell_cache(object):
     def build_cache(self):
         if not os.path.exists(self.selled_csv_file_name):
             print("卖出文件未找到")
-            return False
+            return True
 
         if not os.path.exists(self.not_selled_csv_file_name):
             print("未卖出文件未找到")
-            return False
+            return True
 
         for csv_file_name in [self.selled_csv_file_name, self.not_selled_csv_file_name]:
             with open(csv_file_name, mode='r', newline='') as csv_file:
@@ -600,53 +601,73 @@ class buy_cache(object):
             self.fd.close()
 
 
-def count_earings_分钟线(date_stock, sc, bc):
-    key = date_stock['key']
+def count_earings_分钟线(date_stocks, date, sc, bc):
+    print("计算分钟线收益 ", date)
+    for date_stock in date_stocks:
+        key = date_stock['key']
+        date_stock['买入价'] = 0
+        date_stock['买入量'] = 0
+        date_stock['卖出价'] = 0
+        date_stock['卖出日期'] = 0
+        date_stock['买入金额'] = 0
+        date_stock['盈亏金额'] = 0
+        date_stock['盈亏比'] = 0
 
-    date_stock['买入价'] = 0
-    date_stock['买入量'] = 0
-    date_stock['卖出价'] = 0
-    date_stock['卖出日期'] = 0
-    date_stock['买入金额'] = 0
-    date_stock['盈亏金额'] = 0
-    date_stock['盈亏比'] = 0
+        buy_ret = bc.get(key)
+        if not buy_ret:
+            print('key %s 计算买入失败' % key)
+            return
 
-    print("计算分钟线收益，key = %s" % key)
+        date_stock['买入价'] = float(buy_ret['买入价'])
+        date_stock['买入量'] = int(buy_ret['买入量'])
 
-    buy_ret = bc.get(key)
-    if not buy_ret:
-        print('key %s 计算买入失败' % key)
-        return
+        buy_price = date_stock['买入价']
+        buy_lots = date_stock['买入量']
+        date_stock['买入金额'] = math.ceil(buy_lots * buy_price)
 
-    sell_ret = sc.get(key)
-    if not sell_ret:
-        print("key %s 找不到卖出价" % key)
-        return
+    date_stocks.sort(key=lambda x: x['买入金额'], reverse=True)
 
-    date_stock['买入价'] = float(buy_ret['买入价'])
-    date_stock['买入量'] = int(buy_ret['买入量'])
-    date_stock['卖出价'] = sell_ret['卖出价']
-    date_stock['卖出日期'] = sell_ret['卖出日期']
+    left_money = 6000 * 10000
+    max_use_money_per_stock = 1500 * 10000
+    ret = 0
 
-    if date_stock['代码'][2:5] == '688':
-        lots_mod = 200
-    else:
-        lots_mod = 100
+    for date_stock in date_stocks:
+        key = date_stock['key']
+        sell_ret = sc.get(key)
+        if not sell_ret:
+            print("key %s 找不到卖出价" % key)
+            return
 
-    buy_price = date_stock['买入价']
-    buy_lots = date_stock['买入量'] // lots_mod * lots_mod
+        should_return = False
+        if date_stock['买入金额'] > max_use_money_per_stock:
+            date_stock['买入量'] = int(max_use_money_per_stock / date_stock['买入价'])
+            date_stock['买入金额'] = math.ceil(date_stock['买入量'] * date_stock['买入价'])
 
-    # 不足100或者200手的量，就放弃这个股票，看下一个
-    if buy_lots == 0:
-        return
+        if date_stock['买入金额'] > left_money:
+            date_stock['买入量'] = int(left_money / date_stock['买入价'])
 
-    use_money = round(buy_lots * buy_price)
-    real_use_money = round(use_money * 1.00012)  # 手续费+印花税
+            if date_stock['买入量'] == 0:
+                date_stock['买入金额'] = 0
+                return ret
 
-    date_stock['买入金额'] = use_money
-    real_sell_money = buy_lots * date_stock['卖出价'] * (1 - 0.00022)
-    date_stock['盈亏比'] = round((real_sell_money / real_use_money - 1) * 100, 2)
-    date_stock['盈亏金额'] = round(real_sell_money - real_use_money)
+            date_stock['买入金额'] = math.ceil(date_stock['买入量'] * date_stock['买入价'])
+            should_return = True
+
+        use_money = date_stock['买入金额']
+
+        date_stock['卖出价'] = sell_ret['卖出价']
+        date_stock['卖出日期'] = sell_ret['卖出日期']
+
+        real_use_money = round(use_money * 1.00012)  # 手续费+印花税
+        real_sell_money = date_stock['买入量'] * date_stock['卖出价'] * (1 - 0.00022)
+        date_stock['盈亏比'] = round((real_sell_money / real_use_money - 1) * 100, 2)
+        date_stock['盈亏金额'] = round(real_sell_money - real_use_money)
+        ret += date_stock['盈亏金额']
+
+        left_money -= use_money
+
+        if should_return or left_money < 10000:
+            return ret
 
 
 def 运行分钟线策略():
@@ -676,17 +697,18 @@ def 运行分钟线策略():
         date_key[date['date']] = date['datestr']
 
     date_stocks = list()
+    earn_moeny = dict()
     for date in ts_dates:
         print("counting ", date)
         sub_data_stocks = mc.get(date, date_key[date])
+        ret = count_earings_分钟线(sub_data_stocks, date, sc, bc)
+        earn_moeny[date] = ret
         date_stocks = date_stocks + sub_data_stocks
 
     with open(work_dir + '分钟线策略.csv', mode='w', newline='') as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
         for date_stock in date_stocks:
-            count_earings_分钟线(date_stock, sc, bc)
-
             row_data = dict()
             for field in fieldnames:
                 row_data[field] = date_stock[field]
