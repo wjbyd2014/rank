@@ -690,6 +690,7 @@ def 运行分钟线策略():
         return
 
     ret_date = get_dates(20220617)
+    ret_date.reverse()
 
     ts_dates = [date['date'] for date in ret_date]
     date_key = dict()
@@ -702,7 +703,7 @@ def 运行分钟线策略():
         print("counting ", date)
         sub_data_stocks = mc.get(date, date_key[date])
         ret = count_earings_分钟线(sub_data_stocks, date, sc, bc)
-        day_earn_money[date] = ret
+        day_earn_money[int(date)] = ret
         date_stocks = date_stocks + sub_data_stocks
 
     with open(work_dir + '分钟线策略.csv', mode='w', newline='') as csv_file:
@@ -729,12 +730,17 @@ def draw_earn_money(day_earn_money):
         month_earn_money[month] += last_month_earn_money
         last_month_earn_money = month_earn_money[month]
 
+    for month in month_earn_money:
+        month_earn_money[month] = month_earn_money[month] / 10000
+
+    months = list(month_earn_money.keys())
+    month_index = pd.period_range(months[0], months[-1], freq='M')
 
     matplotlib.rcParams['font.sans-serif'] = ['SimHei']
     matplotlib.rcParams['font.family'] = 'sans-serif'
     matplotlib.rcParams['axes.unicode_minus'] = False
-    df = pd.DataFrame(month_earn_money.values(), index=month_earn_money.keys(), columns=['总收益'])
-    df.plot(xticks=list(month_earn_money.keys()), rot=90)
+    df = pd.DataFrame(month_earn_money.values(), index=month_index, columns=['总收益'])
+    df.plot(xticks=month_index, rot=90, fontsize=8)
     plt.show()
 
 
