@@ -7,6 +7,7 @@ import math
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 
 sys.path.append("D:\Tinysoft\Analyse.NET")
 import TSLPy3 as ts
@@ -364,6 +365,40 @@ class sell_cache(object):
             return None
 
 
+class factor_cache:
+    def __init__(self, csv_file_name):
+        self.cache = dict()
+        self.csv_file_name = work_dir + csv_file_name
+
+    def build_cache(self):
+        if not os.path.exists(self.csv_file_name):
+            print("factor文件未找到")
+            return False
+
+        with open(self.csv_file_name, mode='r', newline='') as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                key = row['key']
+                if key in self.cache:
+                    print('重复key(%s) in factor_cache' % row['key'])
+                    continue
+
+                self.cache[key] = {
+                    'f1': float(row['f1']),
+                    'f2': float(row['f2']),
+                    'f3': float(row['f3']),
+                    'f4': float(row['f4'])
+                }
+
+        return True
+
+    def get(self, key):
+        if key in self.cache:
+            return self.cache[key]
+        else:
+            return None
+
+
 def 运行打分策略():
     pc = pkje_cache("pankoujine.js", "pankoujine.csv")
     if not pc.build_cache():
@@ -550,7 +585,7 @@ class buy_cache(object):
     def __init__(self, buy_csv_file_name):
         self.cache = dict()
         self.buy_csv_file_name = work_dir + buy_csv_file_name
-        self.fieldnames = ['key', '买入价', '买入量']
+        self.fieldnames = ['key', '买入价', '买入量', '昨日涨停', '前日涨停']
         self.code = F读取脚本文件("fenzhongxianmairu.js")
         self.fd = None
         self.writer = None
@@ -591,7 +626,7 @@ class buy_cache(object):
                 if new_file:
                     self.writer.writeheader()
 
-            data = {'key': key, '买入价': ret_data[0], '买入量': int(ret_data[1])}
+            data = {'key': key, '买入价': ret_data[0], '买入量': int(ret_data[1]), '昨日涨停':ret_data[2], '前日涨停':ret_data[3]}
             self.writer.writerow(data)
             self.cache[key] = data
             return self.cache[key]
@@ -601,7 +636,7 @@ class buy_cache(object):
             self.fd.close()
 
 
-def count_earings_分钟线(date_stocks, date, sc, bc):
+def count_earings_分钟线(date_stocks, date, sc, bc, fc):
     print("计算分钟线收益 ", date)
     for date_stock in date_stocks:
         key = date_stock['key']
@@ -610,7 +645,7 @@ def count_earings_分钟线(date_stocks, date, sc, bc):
         date_stock['卖出价'] = 0
         date_stock['卖出日期'] = 0
         date_stock['买入金额'] = 0
-        date_stock['盈亏金额'] = 0
+        date_stock['盈亏金额'] = 'N/A'
         date_stock['盈亏比'] = 0
 
         buy_ret = bc.get(key)
@@ -618,26 +653,44 @@ def count_earings_分钟线(date_stocks, date, sc, bc):
             print('key %s 计算买入失败' % key)
             return
 
+        fc_ret = fc.get(key)
+        if not fc_ret:
+            print('key %s 读取因子失败' % key)
+            return
+
+        date_stock['f1'] = float(fc_ret['f1'])
+        date_stock['f2'] = float(fc_ret['f2'])
+        date_stock['f3'] = float(fc_ret['f3'])
+        date_stock['f4'] = float(fc_ret['f4'])
+
         date_stock['买入价'] = float(buy_ret['买入价'])
         date_stock['买入量'] = int(buy_ret['买入量'])
+        date_stock['昨日涨停'] = buy_ret['昨日涨停']
+        date_stock['前日涨停'] = buy_ret['前日涨停']
 
         buy_price = date_stock['买入价']
         buy_lots = date_stock['买入量']
         date_stock['买入金额'] = math.ceil(buy_lots * buy_price)
 
-    date_stocks.sort(key=lambda x: x['买入金额'], reverse=True)
+        if buy_price == 0:
+            continue
+
+        sell_ret = sc.get(key)
+        if not sell_ret:
+            print("key %s 找不到卖出价" % key)
+            continue
+
+        date_stock['卖出价'] = sell_ret['卖出价']
+        date_stock['卖出日期'] = sell_ret['卖出日期']
+        date_stock['盈亏比'] = round((date_stock['卖出价'] / date_stock['买入价'] - 1) * 100, 2)
+
+    date_stocks.sort(key=lambda x: x['f2'], reverse=True)
 
     left_money = 6000 * 10000
     max_use_money_per_stock = 1500 * 10000
     ret = 0
 
     for date_stock in date_stocks:
-        key = date_stock['key']
-        sell_ret = sc.get(key)
-        if not sell_ret:
-            print("key %s 找不到卖出价" % key)
-            continue
-
         should_return = False
         if date_stock['买入金额'] > max_use_money_per_stock:
             date_stock['买入量'] = int(max_use_money_per_stock / date_stock['买入价'])
@@ -655,11 +708,11 @@ def count_earings_分钟线(date_stocks, date, sc, bc):
 
         use_money = date_stock['买入金额']
 
-        date_stock['卖出价'] = sell_ret['卖出价']
-        date_stock['卖出日期'] = sell_ret['卖出日期']
+        if use_money == 0:
+            continue
 
         real_use_money = round(use_money * 1.00012)  # 手续费
-        real_sell_money = date_stock['买入量'] * date_stock['卖出价'] * (1 - 0.00022) #手续费+印花税
+        real_sell_money = date_stock['买入量'] * date_stock['卖出价'] * (1 - 0.00022)  # 手续费+印花税
         date_stock['盈亏比'] = round((real_sell_money / real_use_money - 1) * 100, 2)
         date_stock['盈亏金额'] = round(real_sell_money - real_use_money)
         ret += date_stock['盈亏金额']
@@ -675,7 +728,9 @@ def 运行分钟线策略():
                   '最高价涨幅', '最后均价涨幅', '最后收盘价涨幅',
                   '白线过3%分钟数', '白线高于黄线分钟数',
                   '买入量', '买入价', '卖出价', '卖出日期',
-                  '买入金额', '盈亏金额', '盈亏比'
+                  '买入金额', '盈亏金额', '盈亏比',
+                  'f1', 'f2', 'f3', 'f4',
+                  '昨日涨停', '前日涨停'
                   ]
 
     mc = minute_cache("分钟线股票池.csv", fieldnames)
@@ -687,6 +742,10 @@ def 运行分钟线策略():
 
     bc = buy_cache("买入明细.csv")
     if not bc.build_cache():
+        return
+
+    fc = buy_cache("临时因子.csv")
+    if not fc.build_cache():
         return
 
     ret_date = get_dates(20220617)
@@ -702,11 +761,11 @@ def 运行分钟线策略():
     for date in ts_dates:
         print("counting ", date)
         sub_data_stocks = mc.get(date, date_key[date])
-        ret = count_earings_分钟线(sub_data_stocks, date, sc, bc)
+        ret = count_earings_分钟线(sub_data_stocks, date, sc, bc, fc)
         day_earn_money[int(date)] = ret
         date_stocks = date_stocks + sub_data_stocks
 
-    with open(work_dir + '分钟线策略.csv', mode='w', newline='') as csv_file:
+    with open(work_dir + '分钟线策略(f2从大到小).csv', mode='w', newline='') as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()
         for date_stock in date_stocks:
@@ -719,28 +778,32 @@ def 运行分钟线策略():
 
 
 def draw_earn_money(day_earn_money):
-    month_earn_money = dict()
-    for date in day_earn_money:
-        month = date // 100
-        month_earn_money.setdefault(month, 0)
-        month_earn_money[month] += day_earn_money[date]
-
-    last_month_earn_money = 0
-    for month in month_earn_money:
-        month_earn_money[month] += last_month_earn_money
-        last_month_earn_money = month_earn_money[month]
-
-    for month in month_earn_money:
-        month_earn_money[month] = month_earn_money[month] / 10000
-
-    months = list(month_earn_money.keys())
-    month_index = pd.period_range(months[0], months[-1], freq='M')
+    earn_money = 0
+    d = dict()
+    for day in day_earn_money:
+        earn_money += day_earn_money[day]
+        d[pd.to_datetime(str(day))] = earn_money / 10000
 
     matplotlib.rcParams['font.sans-serif'] = ['SimHei']
     matplotlib.rcParams['font.family'] = 'sans-serif'
     matplotlib.rcParams['axes.unicode_minus'] = False
-    df = pd.DataFrame(month_earn_money.values(), index=month_index, columns=['总收益'])
-    df.plot(xticks=month_index, rot=90, fontsize=8)
+
+    df = pd.DataFrame(d.values(), index=list(d.keys()), columns=['总收益'])
+    ymax = df.max().max()
+    ymin = df.min().min()
+    xmax = df.index.max()
+    xmin = df.index.min()
+
+    ax1 = df.plot(figsize=(14, 6), yticks=[*np.linspace(ymin, ymax, 20)], rot=90, sharey=False,
+                  subplots=False, grid=True, fontsize=8)
+
+    alldays = matplotlib.dates.DayLocator(interval=5)  # 主刻度为每月
+    ax1.xaxis.set_major_locator(alldays)  # 设置主刻度
+    ax1.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y%m%d')) #主刻度格式为年月日
+    ax1.xaxis.set_minor_formatter(plt.NullFormatter()) #取消副刻度
+    ax1.set_xlim(xmin, xmax) #x轴范围
+    ax1.set_ylim(ymin, ymax) #y轴范围
+    plt.subplots_adjust(top=0.96, bottom=0.09, right=0.97, left=0.03, hspace=0.02, wspace=0.02)
     plt.show()
 
 
