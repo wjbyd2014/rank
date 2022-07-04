@@ -626,7 +626,7 @@ class buy_cache(object):
                 if new_file:
                     self.writer.writeheader()
 
-            data = {'key': key, '买入价': ret_data[0], '买入量': int(ret_data[1]), '昨日涨停':ret_data[2], '前日涨停':ret_data[3]}
+            data = {'key': key, '买入价': ret_data[0], '买入量': int(ret_data[1]), '昨日涨停': ret_data[2], '前日涨停': ret_data[3]}
             self.writer.writerow(data)
             self.cache[key] = data
             return self.cache[key]
@@ -774,15 +774,158 @@ def 运行分钟线策略():
                 row_data[field] = date_stock[field]
             writer.writerow(row_data)
 
-    draw_earn_money(day_earn_money)
+    draw_earn_money(day_earn_money, '分钟线收益图')
 
 
-def draw_earn_money(day_earn_money):
+class zz1000_withdraw_cache:
+    def __init__(self, csv_file_name):
+        self.cache = dict()
+        self.csv_file_name = csv_file_name
+        self.field_names = ['key', '最大回撤开始时间', '最大回撤结束时间', '最大跌幅持续时间', '最大跌幅百分比']
+        self.code = F读取脚本文件("dapanhuiche.js")
+        self.fd = None
+        self.writer = None
+
+    def build_cache(self):
+        if not os.path.exists(self.csv_file_name):
+            return
+
+        with open(self.csv_file_name, mode='r', newline='') as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                key = row['key']
+                if key in self.cache:
+                    print('重复key(%s) in zz1000_withdraw_cache' % row['key'])
+                    continue
+
+                data = {}
+                for field in self.field_names:
+                    data[field] = row[field]
+                self.cache[key] = data
+
+    def get(self, key):
+        if key in self.cache:
+            return self.cache[key]
+        else:
+            print("计算大盘回撤, date = ", key)
+            ts_data = F执行语句(self.code, {'day': key})
+            data = ts_data[0]
+            data['key'] = key
+
+            if not self.fd:
+                new_file = not os.path.exists(self.csv_file_name)
+                self.fd = open(self.csv_file_name, mode='a', newline='')
+                self.writer = csv.DictWriter(self.fd, fieldnames=self.field_names)
+                if new_file:
+                    self.writer.writeheader()
+
+            self.writer.writerow(data)
+            self.cache[key] = data
+            return data
+
+    def __del__(self):
+        if self.fd:
+            self.fd.close()
+
+
+class stock_withdraw_cache:
+    def __init__(self, csv_file_name):
+        self.cache = dict()
+        self.csv_file_name = csv_file_name
+        self.field_names = ['key', '日期', '代码', '名称', '量比', '观察期开始时间', '观察期结束时间',
+                            '曾经最高点涨幅', '观察期起点', '观察期终点', '观察期最低点',
+                            '最大回撤开始时间', '最大回撤结束时间', '最大回撤起点', '最大回撤终点', '最大回撤百分比',
+                            '最大反向回撤开始时间', '最大反向回撤结束时间', '最大反向回撤百分比']
+
+        self.code = F读取脚本文件("geguhuiche.js")
+        self.fd = None
+        self.writer = None
+
+    def build_cache(self):
+        if not os.path.exists(self.csv_file_name):
+            return
+
+        with open(self.csv_file_name, mode='r', newline='') as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                key = row['key']
+                key_ = key.split('|')
+                if len(key_) != 2:
+                    return None
+
+                day = key_[0]
+                data = {}
+                for field in self.field_names:
+                    data[field] = row[field]
+                self.cache.setdefault(int(day), list())
+                self.cache[int(day)].append(data)
+
+    def get(self, key, begin_time, end_time):
+        if key in self.cache:
+            return self.cache[key]
+        else:
+            print("计算个股回撤, key = ", key)
+            ts_data = F执行语句(self.code, {'day': key, 'begin_time': begin_time, 'end_time': end_time})
+
+            if not self.fd:
+                new_file = not os.path.exists(self.csv_file_name)
+                self.fd = open(self.csv_file_name, mode='a', newline='')
+                self.writer = csv.DictWriter(self.fd, fieldnames=self.field_names)
+                if new_file:
+                    self.writer.writeheader()
+
+            for data in ts_data:
+                data['key'] = str(key) + '|' + data['代码']
+                data['日期'] = str(key)
+                self.writer.writerow(data)
+            self.cache[key] = ts_data
+            return ts_data
+
+    def __del__(self):
+        if self.fd:
+            self.fd.close()
+
+
+def 运行回撤趋势图策略():
+    zwc = zz1000_withdraw_cache(work_dir + '大盘回撤.csv')
+    zwc.build_cache()
+
+    swc = stock_withdraw_cache(work_dir + '个股回撤.csv')
+    swc.build_cache()
+
+    ret_date = get_dates(20220701)
+    ret_date.reverse()
+
+    ts_dates = [date['date'] for date in ret_date]
+    date_key = dict()
+    for date in ret_date:
+        date_key[date['date']] = date['datestr']
+
+    for date in ts_dates:
+        withdraw = zwc.get(str(date))
+        if not withdraw:
+            print("count withdraw failed, date = ", date)
+        else:
+            begin_time = withdraw['最大回撤开始时间']
+            end_time = withdraw['最大回撤结束时间']
+            withdraw_time = withdraw['最大跌幅持续时间']
+            max_withdraw_ratio = withdraw['最大跌幅百分比']
+            print(date, begin_time, end_time, withdraw_time, max_withdraw_ratio)
+
+            ret = swc.get(date, begin_time, end_time)
+            if not ret:
+                print("计算个股回撤失败, date = ", date)
+                return
+
+
+
+
+def draw_earn_money(day_earn_money, title):
     earn_money = 0
     d = dict()
     for day in day_earn_money:
         earn_money += day_earn_money[day]
-        d[pd.to_datetime(str(day))] = earn_money / 10000
+        d[pd.to_datetime(str(day))] = [earn_money / 10000]
 
     matplotlib.rcParams['font.sans-serif'] = ['SimHei']
     matplotlib.rcParams['font.family'] = 'sans-serif'
@@ -799,15 +942,16 @@ def draw_earn_money(day_earn_money):
 
     alldays = matplotlib.dates.DayLocator(interval=5)  # 主刻度为每月
     ax1.xaxis.set_major_locator(alldays)  # 设置主刻度
-    ax1.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y%m%d')) #主刻度格式为年月日
-    ax1.xaxis.set_minor_formatter(plt.NullFormatter()) #取消副刻度
-    ax1.set_xlim(xmin, xmax) #x轴范围
-    ax1.set_ylim(ymin, ymax) #y轴范围
+    ax1.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y%m%d'))  # 主刻度格式为年月日
+    ax1.xaxis.set_minor_formatter(plt.NullFormatter())  # 取消副刻度
+    ax1.set_xlim(xmin, xmax)  # x轴范围
+    ax1.set_ylim(ymin, ymax)  # y轴范围
     plt.subplots_adjust(top=0.96, bottom=0.09, right=0.97, left=0.03, hspace=0.02, wspace=0.02)
+    plt.title(title)
     plt.show()
 
 
 if __name__ == '__main__':
     F断开服务器()
     F连接服务器(b配置文件=True)
-    运行分钟线策略()
+    运行回撤趋势图策略()
