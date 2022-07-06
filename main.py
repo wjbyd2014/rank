@@ -801,7 +801,7 @@ class zz1000_withdraw_cache:
                 data = {}
                 for field in self.field_names:
                     data[field] = row[field]
-                self.cache[key] = data
+                self.cache[int(key)] = data
 
     def get(self, key):
         if key in self.cache:
@@ -834,8 +834,10 @@ class stock_withdraw_cache:
         self.csv_file_name = csv_file_name
         self.field_names = ['key', '日期', '代码', '名称', '量比', '观察期开始时间', '观察期结束时间',
                             '曾经最高点涨幅', '观察期起点', '观察期终点', '观察期最低点',
-                            '最大回撤开始时间', '最大回撤结束时间', '最大回撤起点', '最大回撤终点', '最大回撤百分比',
-                            '最大反向回撤开始时间', '最大反向回撤结束时间', '最大反向回撤百分比']
+                            '最大回撤开始时间', '最大回撤结束时间', '最大回撤持续时间', '最大回撤起点', '最大回撤终点', '最大回撤百分比',
+                            '最大反向回撤开始时间', '最大反向回撤结束时间', '最大反向回撤持续时间', '最大反向回撤百分比',
+                            '次大反向回撤开始时间', '次大反向回撤结束时间', '次大反向回撤持续时间', '次大反向回撤百分比',
+                            '买入价', '买入量']
 
         self.code = F读取脚本文件("geguhuiche.js")
         self.fd = None
@@ -854,13 +856,15 @@ class stock_withdraw_cache:
                     return None
 
                 day = key_[0]
+                one_day = re.split('[-/]', day)
+                day = int(one_day[0]) * 10000 + int(one_day[1]) * 100 + int(one_day[2])
                 data = {}
                 for field in self.field_names:
                     data[field] = row[field]
-                self.cache.setdefault(int(day), list())
-                self.cache[int(day)].append(data)
+                self.cache.setdefault(day, list())
+                self.cache[day].append(data)
 
-    def get(self, key, begin_time, end_time):
+    def get(self, key, date_str, begin_time, end_time):
         if key in self.cache:
             return self.cache[key]
         else:
@@ -875,8 +879,8 @@ class stock_withdraw_cache:
                     self.writer.writeheader()
 
             for data in ts_data:
-                data['key'] = str(key) + '|' + data['代码']
-                data['日期'] = str(key)
+                data['key'] = date_str + '|' + data['代码']
+                data['日期'] = date_str
                 self.writer.writerow(data)
             self.cache[key] = ts_data
             return ts_data
@@ -886,15 +890,36 @@ class stock_withdraw_cache:
             self.fd.close()
 
 
+def count_stock_withdraw_earn_money(data, sc_ret):
+    buy_price = float(data['买入价'])
+    buy_vol = float(data['买入量'])
+    data['买入金额'] = round((buy_price * buy_vol), 2)
+    sell_price = sc_ret['卖出价']
+    sell_day = sc_ret['卖出日期']
+    data['卖出价'] = sell_price
+    data['卖出日期'] = sell_day
+    use_money = buy_price * buy_vol
+    sell_money = sell_price * buy_vol
+    data['盈亏金额'] = round(sell_money - use_money)
+    data['盈亏比'] = round((sell_money / use_money - 1) * 100, 2)
+
+
 def 运行回撤趋势图策略():
     zwc = zz1000_withdraw_cache(work_dir + '大盘回撤.csv')
     zwc.build_cache()
 
-    swc = stock_withdraw_cache(work_dir + '个股回撤.csv')
+    swc = stock_withdraw_cache(work_dir + '回撤股票池.csv')
     swc.build_cache()
 
+    sc = sell_cache('卖出明细30.csv', '卖出明细30_未完全卖出.csv')
+    if not sc.build_cache():
+        return
+
+    fd = open(work_dir + '回撤策略.csv', mode='w', newline='')
+    writer = csv.DictWriter(fd, fieldnames=swc.field_names+['买入金额', '卖出价', '卖出日期', '盈亏金额', '盈亏比'])
+    writer.writeheader()
+
     ret_date = get_dates(20220701)
-    ret_date.reverse()
 
     ts_dates = [date['date'] for date in ret_date]
     date_key = dict()
@@ -902,7 +927,7 @@ def 运行回撤趋势图策略():
         date_key[date['date']] = date['datestr']
 
     for date in ts_dates:
-        withdraw = zwc.get(str(date))
+        withdraw = zwc.get(date)
         if not withdraw:
             print("count withdraw failed, date = ", date)
         else:
@@ -912,13 +937,30 @@ def 运行回撤趋势图策略():
             max_withdraw_ratio = withdraw['最大跌幅百分比']
             print(date, begin_time, end_time, withdraw_time, max_withdraw_ratio)
 
-            ret = swc.get(date, begin_time, end_time)
-            if not ret:
+            stock_data = swc.get(date, date_key[date], begin_time, end_time)
+            if not stock_data:
                 print("计算个股回撤失败, date = ", date)
                 return
 
+            for data in stock_data:
+                if float(data['曾经最高点涨幅']) < 3.5:
+                    continue
 
+                if float(data['买入量']) < 100:
+                    continue
 
+                sc_ret = sc.get(data['key'])
+                if not sc_ret:
+                    print("sell price not found, key = ", data['key'])
+                    continue
+
+                count_stock_withdraw_earn_money(data, sc_ret)
+
+                if data['买入金额'] < 100000:
+                    continue
+
+                writer.writerow(data)
+    fd.close()
 
 def draw_earn_money(day_earn_money, title):
     earn_money = 0
