@@ -345,8 +345,8 @@ class sell_cache(object):
                 reader = csv.DictReader(csv_file)
                 for row in reader:
                     key = row['key']
-                    if key in self.cache:
-                        print('重复key(%s) in sell_cache' % row['key'])
+                    if key in self.cache and self.cache[key]['卖出价'] != float(row['卖出价']):
+                        print('重复key(%s) in sell_cache, 而且卖出价不一致' % row['key'])
                         continue
 
                     sell_price = row['卖出价']
@@ -781,7 +781,9 @@ class zz1000_withdraw_cache:
     def __init__(self, csv_file_name):
         self.cache = dict()
         self.csv_file_name = csv_file_name
-        self.field_names = ['key', '最大回撤开始时间', '最大回撤结束时间', '最大跌幅持续时间', '最大跌幅百分比']
+        self.field_names = ['key', '最大回撤开始时间', '最大回撤结束时间', '最大跌幅持续时间', '最大跌幅百分比',
+                            '最大反向回撤开始时间', '最大反向回撤结束时间', '最大反向回撤持续时间', '最大反向回撤百分比',
+                            '次大反向回撤开始时间', '次大反向回撤结束时间', '次大反向回撤持续时间', '次大反向回撤百分比']
         self.code = F读取脚本文件("dapanhuiche.js")
         self.fd = None
         self.writer = None
@@ -832,12 +834,12 @@ class stock_withdraw_cache:
     def __init__(self, csv_file_name):
         self.cache = dict()
         self.csv_file_name = csv_file_name
-        self.field_names = ['key', '日期', '代码', '名称', '量比', '观察期开始时间', '观察期结束时间',
-                            '曾经最高点涨幅', '观察期起点', '观察期终点', '观察期最低点',
+        self.field_names = ['key', '日期', '代码', '名称', '量比',
+                            '观察期开始', '观察期结束',
+                            '开盘以来最高涨幅', '观察期最高涨幅', '观察期最低涨幅', '观察期起点', '观察期终点', '观察期涨幅',
                             '最大回撤开始时间', '最大回撤结束时间', '最大回撤持续时间', '最大回撤起点', '最大回撤终点', '最大回撤百分比',
-                            '最大反向回撤开始时间', '最大反向回撤结束时间', '最大反向回撤持续时间', '最大反向回撤百分比',
-                            '次大反向回撤开始时间', '次大反向回撤结束时间', '次大反向回撤持续时间', '次大反向回撤百分比',
-                            '买入价', '买入量']
+                            '回撤结束后反弹最高点', '回撤结束后反弹百分比',
+                            '上市天数', '买入价', '买入量']
 
         self.code = F读取脚本文件("geguhuiche.js")
         self.fd = None
@@ -881,6 +883,7 @@ class stock_withdraw_cache:
             for data in ts_data:
                 data['key'] = date_str + '|' + data['代码']
                 data['日期'] = date_str
+                data['回撤结束后反弹百分比'] = round(data['回撤结束后反弹最高点'] - data['观察期终点'], 3)
                 self.writer.writerow(data)
             self.cache[key] = ts_data
             return ts_data
@@ -890,18 +893,65 @@ class stock_withdraw_cache:
             self.fd.close()
 
 
-def count_stock_withdraw_earn_money(data, sc_ret):
+def count_stock_withdraw_buy_sell(data, sc_ret):
     buy_price = float(data['买入价'])
     buy_vol = float(data['买入量'])
-    data['买入金额'] = round((buy_price * buy_vol), 2)
+    data['买入金额'] = buy_price * buy_vol
     sell_price = sc_ret['卖出价']
     sell_day = sc_ret['卖出日期']
     data['卖出价'] = sell_price
     data['卖出日期'] = sell_day
     use_money = buy_price * buy_vol
     sell_money = sell_price * buy_vol
-    data['盈亏金额'] = round(sell_money - use_money)
-    data['盈亏比'] = round((sell_money / use_money - 1) * 100, 2)
+    if use_money > 0:
+        data['盈亏金额'] = round(sell_money - use_money)
+        data['盈亏比'] = round((sell_money / use_money - 1) * 100, 2)
+    else:
+        data['盈亏金额'] = data['盈亏比'] = 0
+
+
+def count_stock_withdraw_earn_money(data_list, writer):
+    ret = 0
+    left_money = 6000 * 10000
+    max_use_money_per_stock = 1600 * 10000
+    min_use_money_per_stock = 160 * 10000
+
+    for data in data_list:
+        if float(data['开盘以来最高涨幅']) < 2.5:
+            continue
+
+        if float(data['回撤结束后反弹最高点']) < 2:
+            continue
+
+        if float(data['买入量']) < 100:
+            continue
+
+        if int(data['上市天数']) < 5:
+            continue
+
+        if data['买入金额'] < min_use_money_per_stock:
+            continue
+
+        if left_money > 0:
+            if data['买入金额'] > max_use_money_per_stock:
+                data['实际买入金额'] = max_use_money_per_stock
+            else:
+                data['实际买入金额'] = data['买入金额']
+
+            if data['实际买入金额'] > left_money:
+                data['实际买入金额'] = left_money
+
+            data['实际盈亏金额'] = round(data['实际买入金额'] * (float(data['卖出价']) / float(data['买入价']) - 1))
+            ret += data['实际盈亏金额']
+            left_money -= data['实际买入金额']
+
+            if left_money < min_use_money_per_stock:
+                left_money = 0
+        else:
+            data['实际买入金额'] = data['实际盈亏金额'] = 0
+
+        writer.writerow(data)
+    return ret
 
 
 def 运行回撤趋势图策略():
@@ -916,13 +966,15 @@ def 运行回撤趋势图策略():
         return
 
     fd = open(work_dir + '回撤策略.csv', mode='w', newline='')
-    writer = csv.DictWriter(fd, fieldnames=swc.field_names+['买入金额', '卖出价', '卖出日期', '盈亏金额', '盈亏比'])
+    writer = csv.DictWriter(fd, fieldnames=swc.field_names + ['买入金额', '卖出价', '卖出日期', '盈亏金额', '盈亏比', '实际买入金额', '实际盈亏金额'])
     writer.writeheader()
 
     ret_date = get_dates(20220701)
+    ret_date.reverse()
 
     ts_dates = [date['date'] for date in ret_date]
     date_key = dict()
+    earn_money = dict()
     for date in ret_date:
         date_key[date['date']] = date['datestr']
 
@@ -933,36 +985,30 @@ def 运行回撤趋势图策略():
         else:
             begin_time = withdraw['最大回撤开始时间']
             end_time = withdraw['最大回撤结束时间']
-            withdraw_time = withdraw['最大跌幅持续时间']
-            max_withdraw_ratio = withdraw['最大跌幅百分比']
-            print(date, begin_time, end_time, withdraw_time, max_withdraw_ratio)
 
             stock_data = swc.get(date, date_key[date], begin_time, end_time)
             if not stock_data:
                 print("计算个股回撤失败, date = ", date)
                 return
 
+            data_list = list()
             for data in stock_data:
-                if float(data['曾经最高点涨幅']) < 3.5:
-                    continue
-
-                if float(data['买入量']) < 100:
-                    continue
-
                 sc_ret = sc.get(data['key'])
                 if not sc_ret:
                     print("sell price not found, key = ", data['key'])
                     continue
 
-                count_stock_withdraw_earn_money(data, sc_ret)
+                count_stock_withdraw_buy_sell(data, sc_ret)
+                data_list.append(data)
 
-                if data['买入金额'] < 100000:
-                    continue
-
-                writer.writerow(data)
+            data_list.sort(key=lambda x: float(x['回撤结束后反弹最高点']), reverse=True)
+            ret = count_stock_withdraw_earn_money(data_list, writer)
+            earn_money[date] = ret
+    draw_earn_money(earn_money, work_dir, '回撤结束后反弹最高点(从大到小)', False)
     fd.close()
 
-def draw_earn_money(day_earn_money, title):
+
+def draw_earn_money(day_earn_money, work_dir, title, show_picture):
     earn_money = 0
     d = dict()
     for day in day_earn_money:
@@ -990,7 +1036,13 @@ def draw_earn_money(day_earn_money, title):
     ax1.set_ylim(ymin, ymax)  # y轴范围
     plt.subplots_adjust(top=0.96, bottom=0.09, right=0.97, left=0.03, hspace=0.02, wspace=0.02)
     plt.title(title)
-    plt.show()
+    if show_picture:
+        plt.show()
+    else:
+        f = plt.gcf()  # 获取当前图像
+        path = work_dir + '{}.png'.format(title)
+        f.savefig(path)
+    print("earn_money = ", earn_money)
 
 
 if __name__ == '__main__':
