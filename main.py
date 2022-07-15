@@ -1044,8 +1044,93 @@ def draw_earn_money(day_earn_money, work_dir, title, show_picture):
         f.savefig(path)
     print("earn_money = ", earn_money)
 
+class area_cache:
+    def __init__(self, csv_file_name, begin_time, end_time, num):
+        self.cache = dict()
+        self.begin_time = begin_time
+        self.end_time = end_time
+        self.num = num
+        self.csv_file_name = csv_file_name
+        self.field_names = ['key', '日期', '代码', '名称', '量比',
+                            '上市天数', '买入价', '买入量', '交叉点', '面积']
+
+        self.code = F读取脚本文件("mianji.js")
+        self.fd = None
+        self.writer = None
+
+    def build_cache(self):
+        if not os.path.exists(self.csv_file_name):
+            return
+
+        with open(self.csv_file_name, mode='r', newline='') as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                key = row['key']
+                key_ = key.split('|')
+                if len(key_) != 2:
+                    return None
+
+                day = key_[0]
+                one_day = re.split('[-/]', day)
+                day = int(one_day[0]) * 10000 + int(one_day[1]) * 100 + int(one_day[2])
+                data = {}
+                for field in self.field_names:
+                    data[field] = row[field]
+                self.cache.setdefault(day, list())
+                self.cache[day].append(data)
+
+    def get(self, key, date_str):
+        if key in self.cache:
+            return self.cache[key]
+        else:
+            print("计算个股面积, key = ", key)
+            ts_data = F执行语句(self.code, {'day': key, 'begin_time': self.begin_time, 'end_time': self.end_time, 'num':self.num})
+
+            if not self.fd:
+                new_file = not os.path.exists(self.csv_file_name)
+                self.fd = open(self.csv_file_name, mode='a', newline='')
+                self.writer = csv.DictWriter(self.fd, fieldnames=self.field_names)
+                if new_file:
+                    self.writer.writeheader()
+
+            for data in ts_data:
+                data['key'] = date_str + '|' + data['代码']
+                data['日期'] = date_str
+                self.writer.writerow(data)
+            self.cache[key] = ts_data
+            return ts_data
+
+    def __del__(self):
+        if self.fd:
+            self.fd.close()
+
+def 运行面积策略():
+    ac = area_cache(work_dir + '面积策略股票池.csv', '09:33:00', '09:52:00', 500)
+    ac.build_cache()
+
+    sc = sell_cache('卖出明细30.csv', '卖出明细30_未完全卖出.csv')
+    if not sc.build_cache():
+        return
+
+    fd = open(work_dir + '面积.csv', mode='w', newline='')
+    writer = csv.DictWriter(fd, fieldnames=ac.field_names + ['买入金额', '卖出价', '卖出日期', '盈亏金额', '盈亏比', '实际买入金额', '实际盈亏金额'])
+    writer.writeheader()
+
+    ret_date = get_dates(20220714)[:1]
+    #ret_date.reverse()
+
+    ts_dates = [date['date'] for date in ret_date]
+    date_key = dict()
+    for date in ret_date:
+        date_key[date['date']] = date['datestr']
+
+    for date in ts_dates:
+        stock_data = ac.get(date, date_key[date])
+        if not stock_data:
+            print("计算个股面积失败, date = ", date)
+            return
 
 if __name__ == '__main__':
     F断开服务器()
     F连接服务器(b配置文件=True)
-    运行回撤趋势图策略()
+    运行面积策略()
