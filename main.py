@@ -8,6 +8,7 @@ import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from functools import cmp_to_key
 
 sys.path.append("D:\Tinysoft\Analyse.NET")
 import TSLPy3 as ts
@@ -1044,6 +1045,7 @@ def draw_earn_money(day_earn_money, work_dir, title, show_picture):
         f.savefig(path)
     print("earn_money = ", earn_money)
 
+
 class area_cache:
     def __init__(self, csv_file_name, begin_time, end_time, num):
         self.cache = dict()
@@ -1052,7 +1054,12 @@ class area_cache:
         self.num = num
         self.csv_file_name = csv_file_name
         self.field_names = ['key', '日期', '代码', '名称', '量比',
-                            '上市天数', '买入价', '买入量', '交叉点', '面积']
+                            '上市天数', '买入量', '是否涨停', '收盘价涨幅', '交叉点', '面积',
+                            '观察期结束可以直接买入', '观察期结束直接买入价', '大回撤开始时间', '大回撤结束时间', '大回撤买入价',
+                            '上一波谷形成时间', '双波谷触发时间', '双波谷买入价']
+        self.convert_field_names = {'量比': float,
+                                    '上市天数': int, '买入量': float, '是否涨停': int, '收盘价涨幅': float, '面积': float,
+                                    '观察期结束可以直接买入': int, '观察期结束直接买入价': float, '大回撤买入价': float, '双波谷买入价': float}
 
         self.code = F读取脚本文件("mianji.js")
         self.fd = None
@@ -1077,6 +1084,8 @@ class area_cache:
                 for field in self.field_names:
                     data[field] = row[field]
                 self.cache.setdefault(day, list())
+                for field in self.convert_field_names:
+                    data[field] = self.convert_field_names[field](data[field])
                 self.cache[day].append(data)
 
     def get(self, key, date_str):
@@ -1084,7 +1093,8 @@ class area_cache:
             return self.cache[key]
         else:
             print("计算个股面积, key = ", key)
-            ts_data = F执行语句(self.code, {'day': key, 'begin_time': self.begin_time, 'end_time': self.end_time, 'num':self.num})
+            ts_data = F执行语句(self.code,
+                            {'day': key, 'begin_time': self.begin_time, 'end_time': self.end_time, 'num': self.num})
 
             if not self.fd:
                 new_file = not os.path.exists(self.csv_file_name)
@@ -1104,6 +1114,79 @@ class area_cache:
         if self.fd:
             self.fd.close()
 
+
+def com_buy_price(data1, data2):
+    if data1['买入价'] != 0 and data2['买入价'] != 0:
+        if data1['买入时间'] < data2['买入时间']:
+            return 1
+        elif data1['买入时间'] > data2['买入时间']:
+            return -1
+        else:
+            return 0
+    else:
+        if data1['买入价'] > data2['买入价']:
+            return 1
+        elif data1['买入价'] < data2['买入价']:
+            return -1
+        else:
+            return 0
+
+
+def select_buy_price(data_list):
+    for data in data_list:
+        data['买入价'] = data['买入时间'] = data['买入金额'] = data['盈亏金额'] = data['盈亏比'] = 0
+
+        '''if data['观察期结束直接买入价'] != 0:
+            data['买入价'] = data['观察期结束直接买入价']
+            data['买入时间'] = '09:52:00'
+
+        if data['大回撤买入价'] != 0:
+            if data['买入价'] == 0 or data['大回撤结束时间'] < data['买入时间']:
+                data['买入价'] = data['大回撤买入价']
+                data['买入时间'] = data['大回撤结束时间']'''
+
+        if data['双波谷买入价'] != 0:
+            if data['买入价'] == 0 or data['双波谷触发时间'] < data['买入时间']:
+                data['买入价'] = data['双波谷买入价']
+                data['买入时间'] = data['双波谷触发时间']
+
+        if data['买入价'] != 0:
+            data['买入金额'] = round(data['买入价'] * data['买入量'])
+            data['盈亏比'] = round((data['卖出价'] / data['买入价'] - 1) * 100, 2)
+            data['盈亏金额'] = round((data['卖出价'] - data['买入价']) * data['买入量'])
+
+    data_list.sort(key=cmp_to_key(com_buy_price), reverse=True)
+
+
+def count_stock_area_earn_money(data_list, writer):
+    ret = 0
+    left_money = 6000 * 10000
+    max_use_money_per_stock = 1800 * 10000
+    min_use_money_per_stock = 100 * 10000
+
+    for data in data_list:
+        if data['买入价'] != 0 and left_money > 0:
+            if data['买入金额'] > max_use_money_per_stock:
+                data['实际买入金额'] = max_use_money_per_stock
+            else:
+                data['实际买入金额'] = data['买入金额']
+
+            if data['实际买入金额'] > left_money:
+                data['实际买入金额'] = left_money
+
+            data['实际盈亏金额'] = round(data['实际买入金额'] * (data['卖出价'] / data['买入价'] - 1))
+            ret += data['实际盈亏金额']
+            left_money -= data['实际买入金额']
+
+            if left_money < min_use_money_per_stock:
+                left_money = 0
+        else:
+            data['实际买入金额'] = data['实际盈亏金额'] = 0
+
+        writer.writerow(data)
+    return ret, left_money
+
+
 def 运行面积策略():
     ac = area_cache(work_dir + '面积策略股票池.csv', '09:33:00', '09:52:00', 500)
     ac.build_cache()
@@ -1112,23 +1195,54 @@ def 运行面积策略():
     if not sc.build_cache():
         return
 
-    fd = open(work_dir + '面积.csv', mode='w', newline='')
-    writer = csv.DictWriter(fd, fieldnames=ac.field_names + ['买入金额', '卖出价', '卖出日期', '盈亏金额', '盈亏比', '实际买入金额', '实际盈亏金额'])
+    fd = open(work_dir + '面积策略.csv', mode='w', newline='')
+    writer = csv.DictWriter(fd, fieldnames=ac.field_names + ['买入时间', '买入价', '卖出价', '卖出日期', '买入金额',
+                                                             '盈亏金额', '盈亏比', '实际买入金额', '实际盈亏金额'])
     writer.writeheader()
 
-    ret_date = get_dates(20220714)[:1]
-    #ret_date.reverse()
+    ret_date = get_dates(20220715)
+    ret_date.reverse()
 
     ts_dates = [date['date'] for date in ret_date]
     date_key = dict()
     for date in ret_date:
         date_key[date['date']] = date['datestr']
 
+    earn_money = dict()
     for date in ts_dates:
         stock_data = ac.get(date, date_key[date])
         if not stock_data:
             print("计算个股面积失败, date = ", date)
             return
+
+        data_list = list()
+        for data in stock_data:
+            sc_ret = sc.get(data['key'])
+            if not sc_ret:
+                print("sell price not found, key = ", data['key'])
+                continue
+
+            data['卖出价'] = sc_ret['卖出价']
+            data['卖出日期'] = sc_ret['卖出日期']
+            data_list.append(data)
+
+        data_list2 = list()
+        stock_per_day = 50
+        for data in data_list:
+            if data['是否涨停'] == 1:
+                data_list2.append(data)
+            elif stock_per_day > 0:
+                data_list2.append(data)
+                stock_per_day -= 1
+
+        select_buy_price(data_list2)
+        got_money, left_money = count_stock_area_earn_money(data_list2, writer)
+        if left_money > 0:
+            print("%s left %d\n" % (date, left_money))
+        earn_money[date] = got_money
+    draw_earn_money(earn_money, work_dir, '面积策略收益图', True)
+    fd.close()
+
 
 if __name__ == '__main__':
     F断开服务器()
