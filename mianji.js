@@ -4,12 +4,10 @@ Begin
     day := IntToDate({day});
     time1_str := '{time1}';
     time2_str := '{time2}';
-    time3_str := '{time3}';
     num := {num};
 
     time1 := StrToTime(time1_str);
     time2 := StrToTime(time2_str);
-    time3 := StrToTime(time3_str);
 
     大盘分钟线 := get_zz1000_data(day, time1, time2);
 
@@ -27,9 +25,9 @@ Begin
 
         if stock_name like 'ST|退' then
             continue;
-
         if not is_trade_day(day, stock_code) then
             continue;
+
 
         // 计算昨日收盘价
         with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
@@ -38,11 +36,15 @@ Begin
             今日涨停价 := StockZtClose(day);
             上市天数 := StockGoMarketDays();
             前N日平均成交量 := ref(ma(vol(), 100), 1);
+            昨日30均线 := ref(ma(close(), 30), 1);
+            前日30均线 := ref(ma(close(), 30), 2);
+            if 昨日30均线 > 前日30均线 then
+                均线向上 := 1;
+            else
+                均线向上 := 0;
         end
-
         if 昨日收盘价 = 0 or 今日涨停价 = 0 then
             continue;
-
         // 获取分钟线
         with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_1m()) do
         begin
@@ -52,22 +54,18 @@ Begin
             ['vol']
             from markettable datekey day+time1 to day+time2 of DefaultStockID() end;
         end
-
         assert(length(data) = 20);
-
         是否涨停 := 0;
         if data[19]['close'] = 今日涨停价 then
             是否涨停 := 1;
         else if count_ratio(data[19]['close'], 昨日收盘价) > 10 then
             是否涨停 := 1;
-
         收盘价涨幅 := count_ratio(data[19]['close'], 昨日收盘价);
         个股分钟线 := data[:, 'close'];
         for idx in 个股分钟线 do
         begin
             个股分钟线[idx] := count_ratio(个股分钟线[idx], 昨日收盘价);
         end
-
         // 计算量比
         data_vol := data[:, 'vol'];
         sortarray(data_vol);
@@ -76,33 +74,31 @@ Begin
         begin
             sum_vol += data_vol[i];
         end
-
         时间线 := data[:, '时间'];
         交叉点面积 := 计算交叉点和面积(stock_name, 时间线, 个股分钟线, 大盘分钟线);
         交叉点 := 交叉点面积[0];
         面积 := 交叉点面积[1];
-
         涨停板数1 := get_涨停板(stock_code, day, 1);
         涨停板数3 := get_涨停板(stock_code, day, 3);
         涨停板数5 := get_涨停板(stock_code, day, 5);
-
+        涨停板数7 := get_涨停板(stock_code, day, 7);
         if 面积 <= 0 then
             continue;
-
         量比 := floatn(sum_vol / 前N日平均成交量 * 100, 2);
         买入量 := int(sum_vol / 10);
-        买入价 := 计算买入价(stock_name, stock_code, day, data, 今日涨停价, time2, time3);
+        买入价 := 计算买入价(stock_name, stock_code, day, data, 今日涨停价, time2);
         arr := array(('名称':stock_name, '代码':stock_code, '量比':量比,
-            '上市天数':上市天数,'买入量':买入量, '是否涨停':是否涨停, '收盘价涨幅': 收盘价涨幅,
+            '上市天数':上市天数,'买入量':买入量, '是否涨停':是否涨停, '收盘价涨幅': 收盘价涨幅, 'ma30向上':均线向上,
             '观察期结束可以直接买入':买入价[0], '观察期结束直接买入价':买入价[1],
             '大回撤开始时间':买入价[2], '大回撤结束时间':买入价[3], '大回撤买入价':买入价[4],
             '上一波谷形成时间': 买入价[5], '双波谷触发时间':买入价[6], '双波谷买入价':买入价[7],
-            '交叉点':交叉点, '面积':面积, '1日涨停板数': 涨停板数1, '3日涨停板数':涨停板数3, '5日涨停板数':涨停板数5));
-        if 涨停板数1 > 0 or 涨停板数2 > 0 or 涨停板数3 > 0 then
+            '交叉点':交叉点, '面积':面积, '1日涨停板数': 涨停板数1, '3日涨停板数':涨停板数3, '5日涨停板数':涨停板数5, '7日涨停板数':涨停板数7));
+        if 涨停板数1 > 0 or 涨停板数3 > 0 or 涨停板数5 > 0 then
             有涨停板股票列表 &= arr;
         else
             无涨停板股票列表 &= arr;
     end
+    SortTableByField(有涨停板股票列表, '面积', 0);
     SortTableByField(无涨停板股票列表, '面积', 0);
     ret &= 有涨停板股票列表;
     if length(ret) < num then
@@ -137,7 +133,7 @@ begin
     return array(交叉时间, floatn(面积, 2));
 end
 
-function 计算买入价(stock_name, stock_code, day, data, 今日涨停价, time2, time3);
+function 计算买入价(stock_name, stock_code, day, data, 今日涨停价, time2);
 begin
     highest := data[0]['close'];
     lowest := data[0]['close'];
@@ -163,15 +159,13 @@ begin
         观察期结束可以直接买入 := 0;
         观察期结束直接买入价 := 0;
     end
-
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_1m()) do
     begin
         data := select
         TimeToStr(["date"]) as "时间",
         ["close"]
-        from markettable datekey day+time2 to day+time3 of DefaultStockID() end;
+        from markettable datekey day+time2 to day+0.99999 of DefaultStockID() end;
     end
-
     波峰波谷高度差 := 0.5;
     下降起始点 := -1;
     下降起始时间 := 0;
@@ -183,7 +177,6 @@ begin
     上一波谷收盘价 := 0;
     双波谷触发时间 := 0;
     双波谷买入价 := 0;
-
     for i := 1 to length(data) - 1 do
     begin
         if data[i]['close'] < data[i-1]['close'] then
@@ -210,7 +203,7 @@ begin
                 begin
                     if 下降幅度 >= 波峰波谷高度差 then
                     begin // 波谷形成
-                        if 上一波谷收盘价 = 0 or count_ratio(上一波谷收盘价, data[i-1]['close']) <= 波峰波谷高度差 then
+                        if 上一波谷收盘价 = 0 or count_ratio(上一波谷收盘价, data[i-1]['close']) < 波峰波谷高度差 then
                         begin // 第一个波谷或者双波谷之间跌幅没超过波峰波谷高度差
                             上一波谷形成时间 := data[i-1]['时间'];
                             上一波谷收盘价 := data[i-1]['close'];
@@ -234,14 +227,11 @@ begin
         if 大回撤结束时间 <> 0 and 双波谷触发时间 <> 0 then
             break;
     end
-
     if 双波谷触发时间 = 0 then
         上一波谷形成时间 := 0;
-
     return array(观察期结束可以直接买入, 观察期结束直接买入价, 大回撤开始时间, 大回撤结束时间, 大回撤买入价,
         上一波谷形成时间, 双波谷触发时间, 双波谷买入价);
 end
-
 function get_涨停板(stock_code, day, num);
 begin
     with *,array(pn_Stock():stock_code) do
@@ -256,14 +246,12 @@ begin
         return ret;
     end
 end
-
 function get_zz1000_data(day, time1, time2);
 begin
     with *,array(pn_Stock():'SH000852', pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
     begin
         大盘昨日收盘价 := ref(close(), 1);
     end
-
     // 获取分钟线
     with *,array(pn_Stock():'SH000852', pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_1m()) do
     begin
@@ -272,9 +260,7 @@ begin
         ["close"]
         from markettable datekey day+time1 to day+time2 of DefaultStockID() end;
     end
-
     assert(length(data) = 20);
-
     data := data[:, 'close'];
     for idx in data do
     begin
