@@ -104,10 +104,8 @@ def F断开服务器():
     print('未连接,无需断开')
 
 
-code_rank = F读取脚本文件("rank.js")
-
-
 def count_one_day_score(day, num, pc, sc, date_str):
+    code_rank = F读取脚本文件("rank.js")
     ts_data = F执行语句(code_rank, {'date': day})
 
     idx = 0
@@ -477,10 +475,8 @@ def draw():
     plt.show()
 
 
-code_lianban = F读取脚本文件("lianban.js")
-
-
 def count_one_day_连板(day, date_str):
+    code_lianban = F读取脚本文件("lianban.js")
     ts_data = F执行语句(code_lianban, {'day': day, 'num': 2, 'backtrace_num': 3})
 
     for data in ts_data:
@@ -569,10 +565,8 @@ class minute_cache(object):
             self.fd.close()
 
 
-code_fenzhongxian = F读取脚本文件("fenzhongxian.js")
-
-
 def count_one_day_分钟线(day, date_str):
+    code_fenzhongxian = F读取脚本文件("fenzhongxian.js")
     ts_data = F执行语句(code_fenzhongxian, {'day': day})
 
     for data in ts_data:
@@ -1047,20 +1041,23 @@ def draw_earn_money(day_earn_money, work_dir, title, show_picture):
 
 
 class area_cache:
-    def __init__(self, csv_file_name, time1, time2, time3, num):
+    def __init__(self, csv_file_name, time1, time2, num):
         self.cache = dict()
         self.time1 = time1
         self.time2 = time2
-        self.time3 = time3
         self.num = num
         self.csv_file_name = csv_file_name
         self.field_names = ['key', '日期', '代码', '名称', '量比',
-                            '上市天数', '买入量', '1日涨停板数', '3日涨停板数', '5日涨停板数', '是否涨停', '收盘价涨幅', '交叉点', '面积',
+                            '上市天数', '买入量', '1日涨停板数', '3日涨停板数', '5日涨停板数', '7日涨停板数',
+                            '是否涨停', '收盘价涨幅', 'ma30向上',
+                            '交叉点', '面积',
                             '观察期结束可以直接买入', '观察期结束直接买入价', '大回撤开始时间', '大回撤结束时间', '大回撤买入价',
                             '上一波谷形成时间', '双波谷触发时间', '双波谷买入价']
         self.convert_field_names = {'量比': float,
-                                    '上市天数': int, '买入量': float, '是否涨停': int, '收盘价涨幅': float, '面积': float,
-                                    '观察期结束可以直接买入': int, '观察期结束直接买入价': float, '大回撤买入价': float, '双波谷买入价': float}
+                                    '上市天数': int, '买入量': float, '是否涨停': int, '收盘价涨幅': float,
+                                    '面积': float, 'ma30向上': int,
+                                    '观察期结束可以直接买入': int, '观察期结束直接买入价': float, '大回撤买入价': float, '双波谷买入价': float,
+                                    '1日涨停板数': int, '3日涨停板数': int, '5日涨停板数': int, '7日涨停板数': int}
 
         self.code = F读取脚本文件("mianji.js")
         self.fd = None
@@ -1094,8 +1091,7 @@ class area_cache:
             return self.cache[key]
         else:
             ts_data = F执行语句(self.code,
-                            {'day': key, 'time1': self.time1, 'time2': self.time2, 'time3': self.time3,
-                             'num': self.num})
+                            {'day': key, 'time1': self.time1, 'time2': self.time2, 'num': self.num})
 
             if not self.fd:
                 new_file = not os.path.exists(self.csv_file_name)
@@ -1193,7 +1189,7 @@ def count_stock_area_earn_money(data_list, writer):
 def select_stocks(data_list, data_list2):
     stock_per_day = 50
     for data in data_list:
-        if data['是否涨停'] == 1:
+        if data['1日涨停板数'] > 0 or data['3日涨停板数'] > 0:
             data_list2.append(data)
         elif stock_per_day > 0:
             data_list2.append(data)
@@ -1201,7 +1197,7 @@ def select_stocks(data_list, data_list2):
 
 
 def 运行面积策略():
-    ac = area_cache(work_dir + '面积策略股票池.csv', '09:33:00', '09:52:00', '11:00:00', 800)
+    ac = area_cache(work_dir + '面积策略股票池.csv', '09:33:00', '09:52:00', 800)
     ac.build_cache()
 
     sc = sell_cache('卖出明细30.csv', '卖出明细30_未完全卖出.csv')
@@ -1247,11 +1243,11 @@ def 运行面积策略():
         if left_money > 0:
             print("%s left %d\n" % (date, left_money))
         earn_money[date] = got_money
-    draw_earn_money(earn_money, work_dir, '面积策略收益图', False)
+    draw_earn_money(earn_money, work_dir, '面积策略收益图', True)
     fd.close()
 
 
 if __name__ == '__main__':
     F断开服务器()
-    F连接服务器(b配置文件=True)
+    F连接服务器(b配置文件=False)
     运行面积策略()
