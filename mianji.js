@@ -2,15 +2,19 @@ Function 面积();
 Begin
     // 以下是参数
     day := IntToDate({day});
-    begin_time_str := '{begin_time}';
-    end_time_str := '{end_time}';
+    time1_str := '{time1}';
+    time2_str := '{time2}';
+    time3_str := '{time3}';
     num := {num};
 
-    time1 := StrToTime(begin_time_str);
-    time2 := StrToTime(end_time_str);
+    time1 := StrToTime(time1_str);
+    time2 := StrToTime(time2_str);
+    time3 := StrToTime(time3_str);
 
     大盘分钟线 := get_zz1000_data(day, time1, time2);
 
+    无涨停板股票列表 := array();
+    有涨停板股票列表 := array();
     ret := array();
     stock_list := getbk('A股');
 
@@ -49,8 +53,6 @@ Begin
             from markettable datekey day+time1 to day+time2 of DefaultStockID() end;
         end
 
-        时间线 := data[:, '时间'];
-
         assert(length(data) = 20);
 
         是否涨停 := 0;
@@ -60,7 +62,6 @@ Begin
             是否涨停 := 1;
 
         收盘价涨幅 := count_ratio(data[19]['close'], 昨日收盘价);
-
         个股分钟线 := data[:, 'close'];
         for idx in 个股分钟线 do
         begin
@@ -76,61 +77,67 @@ Begin
             sum_vol += data_vol[i];
         end
 
+        时间线 := data[:, '时间'];
         交叉点面积 := 计算交叉点和面积(stock_name, 时间线, 个股分钟线, 大盘分钟线);
         交叉点 := 交叉点面积[0];
         面积 := 交叉点面积[1];
 
+        涨停板数1 := get_涨停板(stock_code, day, 1);
+        涨停板数3 := get_涨停板(stock_code, day, 3);
+        涨停板数5 := get_涨停板(stock_code, day, 5);
+
+        if 面积 <= 0 then
+            continue;
+
         量比 := floatn(sum_vol / 前N日平均成交量 * 100, 2);
         买入量 := int(sum_vol / 10);
-        买入价 := 计算买入价(stock_name, stock_code, day, data, 今日涨停价, time2);
+        买入价 := 计算买入价(stock_name, stock_code, day, data, 今日涨停价, time2, time3);
         arr := array(('名称':stock_name, '代码':stock_code, '量比':量比,
             '上市天数':上市天数,'买入量':买入量, '是否涨停':是否涨停, '收盘价涨幅': 收盘价涨幅,
             '观察期结束可以直接买入':买入价[0], '观察期结束直接买入价':买入价[1],
             '大回撤开始时间':买入价[2], '大回撤结束时间':买入价[3], '大回撤买入价':买入价[4],
             '上一波谷形成时间': 买入价[5], '双波谷触发时间':买入价[6], '双波谷买入价':买入价[7],
-            '交叉点':交叉点, '面积':面积));
-        ret &= arr;
+            '交叉点':交叉点, '面积':面积, '1日涨停板数': 涨停板数1, '3日涨停板数':涨停板数3, '5日涨停板数':涨停板数5));
+        if 涨停板数1 > 0 then
+            有涨停板股票列表 &= arr;
+        else
+            无涨停板股票列表 &= arr;
     end
-    SortTableByField(ret, '面积', 0);
-    return exportjsonstring(ret[:num-1]);
+    SortTableByField(无涨停板股票列表, '面积', 0);
+    ret &= 有涨停板股票列表;
+    if length(ret) < num then
+    begin
+        ret &= 无涨停板股票列表[:num-length(ret)-1];
+    end
+    return exportjsonstring(ret);
 End;
 
 function 计算交叉点和面积(stock_name, 时间线, 个股分钟线, 大盘分钟线);
 begin
-    交叉点 := -1;
+    if 个股分钟线[19] <= 大盘分钟线[19] then
+        return array(0, 0);
+
+    交叉点 := 0;
     for i := 18 downto 0 do
     begin
-        if (个股分钟线[i] <= 大盘分钟线[i]) and (个股分钟线[i+1] > 大盘分钟线[i+1]) then
+        if 个股分钟线[i] < 大盘分钟线[i] then
         begin
-            if 个股分钟线[i] = 大盘分钟线[i] then
-                交叉点 := i;
-            else
-                交叉点 := i + 1;
+            交叉点 := i + 1;
             break;
         end
     end
 
     面积 := 0;
-    if 交叉点 >= 0 then
-    begin
-        for j := 交叉点 to 18 do
-            面积 += ((个股分钟线[j] + 个股分钟线[j+1]) / 2 - (大盘分钟线[j] + 大盘分钟线[j+1]) / 2);
-    end
-    else
-    begin
-        for j := 0 to 18 do
-        begin
-            if 个股分钟线[i] > 大盘分钟线[i] then
-                面积 += ((个股分钟线[j] + 个股分钟线[j+1]) / 2 - (大盘分钟线[j] + 大盘分钟线[j+1]) / 2);
-        end
-    end
+    for j := 交叉点 to 18 do
+        面积 += ((个股分钟线[j] + 个股分钟线[j+1]) / 2 - (大盘分钟线[j] + 大盘分钟线[j+1]) / 2);
+
     交叉时间 := 0;
-    if 交叉点 >= 0 then
+    if 交叉点 > 0 then
         交叉时间 := 时间线[交叉点];
     return array(交叉时间, floatn(面积, 2));
 end
 
-function 计算买入价(stock_name, stock_code, day, data, 今日涨停价, time2);
+function 计算买入价(stock_name, stock_code, day, data, 今日涨停价, time2, time3);
 begin
     highest := data[0]['close'];
     lowest := data[0]['close'];
@@ -162,9 +169,10 @@ begin
         data := select
         TimeToStr(["date"]) as "时间",
         ["close"]
-        from markettable datekey day+time2 to day+0.99999 of DefaultStockID() end;
+        from markettable datekey day+time2 to day+time3 of DefaultStockID() end;
     end
 
+    波峰波谷高度差 := 0.5;
     下降起始点 := -1;
     下降起始时间 := 0;
     大回撤结束时间 := 0;
@@ -198,35 +206,20 @@ begin
                     大回撤买入价 := data[i-1]['close'];
                 end
 
-                if 双波谷触发时间 = 0 then // 已经触发双波谷了，不需要再算了
+                if 双波谷触发时间 = 0 then // 已经触发双波谷就不需要再算了
                 begin
-                    if 下降幅度 >= 0.5 then
+                    if 下降幅度 >= 波峰波谷高度差 then
                     begin // 波谷形成
-                        if 上一波谷收盘价 = 0 then
-                        begin // 第一个波谷
+                        if 上一波谷收盘价 = 0 or count_ratio(上一波谷收盘价, data[i-1]['close']) <= 波峰波谷高度差 then
+                        begin // 第一个波谷或者双波谷之间跌幅没超过波峰波谷高度差
                             上一波谷形成时间 := data[i-1]['时间'];
                             上一波谷收盘价 := data[i-1]['close'];
                             上一波谷起始点 := data[下降起始点]['close'];
-                        end
-                        else if count_ratio(上一波谷收盘价, data[i-1]['close']) >= 0.5 then
-                        begin // 双波谷形成，条件是波谷本身跌幅超过0.5，双波谷之间跌幅超过0.5，且当前波谷的高点不能比上个波谷的高点更高
-                            if data[下降起始点]['close'] <= 上一波谷起始点 then
-                            begin
-                                双波谷触发时间 := data[i-1]['时间'];
-                                双波谷买入价 := data[i-1]['close'];
-                            end
-                            else
-                            begin // 当前波谷最高点比上个波谷高了，需要重新这个波谷为第一个波谷
-                                上一波谷形成时间 := data[i-1]['时间'];
-                                上一波谷收盘价 := data[i-1]['close'];
-                                上一波谷起始点 := data[下降起始点]['close'];
-                            end
                         end
                         else
-                        begin // 双波谷之间跌幅没超过0.5，重置当前波谷为第一个波谷
-                            上一波谷形成时间 := data[i-1]['时间'];
-                            上一波谷收盘价 := data[i-1]['close'];
-                            上一波谷起始点 := data[下降起始点]['close'];
+                        begin // 双波谷形成，条件是波谷本身跌幅超过波峰波谷高度差，双波谷之间跌幅超过波峰波谷高度差
+                            双波谷触发时间 := data[i-1]['时间'];
+                            双波谷买入价 := data[i-1]['close'];
                         end
                     end
                     else // 下降幅度太小，不算波谷，但需要重置上一波谷的信息
@@ -249,9 +242,24 @@ begin
         上一波谷形成时间, 双波谷触发时间, 双波谷买入价);
 end
 
+function get_涨停板(stock_code, day, num);
+begin
+    with *,array(pn_Stock():stock_code) do
+    begin
+        ret := 0;
+        for i := 1 to num do
+        begin
+            one_day := StockEndTPrevNDay(day, i);
+            if StockIsZt(one_day) then
+                ret += 1;
+        end
+        return ret;
+    end
+end
+
 function get_zz1000_data(day, time1, time2);
 begin
-    with *,array(pn_Stock():'SH000852', pn_date():day, pn_rate():0, pn_rateday():0, PN_Cycle():cy_day()) do
+    with *,array(pn_Stock():'SH000852', pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
     begin
         大盘昨日收盘价 := ref(close(), 1);
     end
