@@ -1195,11 +1195,14 @@ def select_stocks(data_list, data_list2):
         if data['1日涨停板数'] > 0:
             data['打分'] += 500
         elif data['3日涨停板数'] > 0:
-            data['打分'] += 200
+            data['打分'] += 250
         elif data['5日涨停板数'] > 0:
-            data['打分'] += 80
+            data['打分'] += 100
         elif data['7日涨停板数'] > 0:
-            data['打分'] += 30
+            data['打分'] += 50
+
+        if data['ma30向上'] == 0:
+            data['打分'] -= 50
 
     data_list.sort(key=lambda x: x['打分'], reverse=True)
     for data in data_list[:stock_per_day]:
