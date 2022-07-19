@@ -1049,14 +1049,15 @@ class area_cache:
         self.csv_file_name = csv_file_name
         self.field_names = ['key', '日期', '代码', '名称', '量比',
                             '上市天数', '买入量', '1日涨停板数', '3日涨停板数', '5日涨停板数', '7日涨停板数',
-                            '是否涨停', '收盘价涨幅', 'ma30向上',
+                            '是否涨停', '观察期收盘价涨幅', 'ma30向上',
                             '交叉点', '面积',
                             '观察期结束可以直接买入', '观察期结束直接买入价', '大回撤开始时间', '大回撤结束时间', '大回撤买入价',
-                            '上一波谷形成时间', '双波谷触发时间', '双波谷买入价']
+                            '上一波谷形成时间', '双波谷触发时间', '双波谷买入价', '双波谷涨幅']
         self.convert_field_names = {'量比': float,
-                                    '上市天数': int, '买入量': float, '是否涨停': int, '收盘价涨幅': float,
+                                    '上市天数': int, '买入量': float, '是否涨停': int, '观察期收盘价涨幅': float,
                                     '面积': float, 'ma30向上': int,
-                                    '观察期结束可以直接买入': int, '观察期结束直接买入价': float, '大回撤买入价': float, '双波谷买入价': float,
+                                    '观察期结束可以直接买入': int, '观察期结束直接买入价': float, '大回撤买入价': float,
+                                    '双波谷买入价': float, '双波谷涨幅': float,
                                     '1日涨停板数': int, '3日涨停板数': int, '5日涨停板数': int, '7日涨停板数': int}
 
         self.code = F读取脚本文件("mianji.js")
@@ -1142,7 +1143,7 @@ def select_buy_price(data_list):
                 data['买入价'] = data['大回撤买入价']
                 data['买入时间'] = data['大回撤结束时间']'''
 
-        if data['双波谷买入价'] != 0:
+        if data['双波谷买入价'] != 0 and data['观察期收盘价涨幅'] - data['双波谷涨幅'] < 10:
             if data['买入价'] == 0 or data['双波谷触发时间'] < data['买入时间']:
                 data['买入价'] = data['双波谷买入价']
                 data['买入时间'] = data['双波谷触发时间']
@@ -1187,13 +1188,23 @@ def count_stock_area_earn_money(data_list, writer):
 
 
 def select_stocks(data_list, data_list2):
-    stock_per_day = 50
+    stock_per_day = 100
     for data in data_list:
-        if data['1日涨停板数'] > 0 or data['3日涨停板数'] > 0:
-            data_list2.append(data)
-        elif stock_per_day > 0:
-            data_list2.append(data)
-            stock_per_day -= 1
+        data['打分'] = data['面积']
+
+        if data['1日涨停板数'] > 0:
+            data['打分'] += 500
+        elif data['3日涨停板数'] > 0:
+            data['打分'] += 200
+        elif data['5日涨停板数'] > 0:
+            data['打分'] += 80
+        elif data['7日涨停板数'] > 0:
+            data['打分'] += 30
+
+    data_list.sort(key=lambda x: x['打分'], reverse=True)
+    for data in data_list[:stock_per_day]:
+        data['打分'] = round(data['打分'], 2)
+        data_list2.append(data)
 
 
 def 运行面积策略():
@@ -1205,7 +1216,7 @@ def 运行面积策略():
         return
 
     fd = open(work_dir + '面积策略.csv', mode='w', newline='')
-    writer = csv.DictWriter(fd, fieldnames=ac.field_names + ['买入时间', '买入价', '卖出价', '卖出日期', '可买金额', '买入金额',
+    writer = csv.DictWriter(fd, fieldnames=ac.field_names + ['打分', '买入时间', '买入价', '卖出价', '卖出日期', '可买金额', '买入金额',
                                                              '盈亏金额', '盈亏比', '实际买入金额', '实际盈亏金额'])
     writer.writeheader()
 
