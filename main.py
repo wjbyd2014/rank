@@ -3,7 +3,6 @@ import os
 import re
 import sys
 import csv
-import math
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
@@ -344,14 +343,14 @@ def 分箱(min_value, max_value, interval):
     return ret
 
 
-每日股票池数因子 = 分箱(50, 150, 50)
+每日股票池数因子 = 分箱(60, 140, 20)
 购买时最大跌幅因子 = [8, 10]
 ma30打分因子 = 分箱(0, 50, 25)
-涨停板数1打分因子 = 分箱(300, 500, 100)
-涨停板数3打分因子 = 分箱(100, 140, 20)
-涨停板数5打分因子 = 分箱(40, 60, 10)
-涨停板数7打分因子 = 分箱(10, 30, 10)
-观察期收盘价涨幅因子 = 分箱(6, 10, 2)
+涨停板数1打分因子 = 分箱(400, 600, 100)
+涨停板数3打分因子 = 分箱(200, 300, 10)
+涨停板数5打分因子 = 分箱(70, 130, 10)
+涨停板数7打分因子 = 分箱(30, 80, 10)
+观察期收盘价涨幅因子 = 分箱(-5, -3, 1)
 
 list_factors = [[]]
 
@@ -370,16 +369,18 @@ def gen_factors(list_params):
 
 每日资金量 = 6000
 每只股票最大购买金额 = 1800
+每只股票最小购买金额 = 100
 最小上市天数 = 0
+最小量比 = 0
 
-每日股票池数 = 0
-购买时最大跌幅 = 0
-ma30打分 = 0
-涨停板数1打分 = 300
-涨停板数3打分 = 100
-涨停板数5打分 = 50
-涨停板数7打分 = 15
-观察期收盘价涨幅 = 0
+每日股票池数 = 100
+购买时最大跌幅 = 10
+涨停板数1打分 = 500
+涨停板数3打分 = 250
+涨停板数5打分 = 100
+涨停板数7打分 = 50
+ma30打分 = 50
+观察期收盘价涨幅 = -5
 
 gen_factors([每日股票池数因子, 购买时最大跌幅因子, ma30打分因子,
              涨停板数1打分因子, 涨停板数3打分因子, 涨停板数5打分因子, 涨停板数7打分因子, 观察期收盘价涨幅因子
@@ -404,7 +405,7 @@ def com_buy_price(data1, data2):
 
 
 def select_buy_price(data_list):
-    max_use_money_per_stock = 1800 * 10000
+    use_money_per_stock = 每只股票最大购买金额 * 10000
     for data in data_list:
         data['买入价'] = data['买入时间'] = data['可买金额'] = data['买入金额'] = data['盈亏金额'] = data['盈亏比'] = 0
 
@@ -416,7 +417,7 @@ def select_buy_price(data_list):
                 data['买入价'] = data['大回撤买入价']
                 data['买入时间'] = data['大回撤结束时间']"""
 
-        if data['双波谷买入价'] != 0 and data['观察期收盘价涨幅'] - data['双波谷涨幅'] < 10:
+        if data['双波谷买入价'] != 0 and data['观察期收盘价涨幅'] - data['双波谷涨幅'] < 购买时最大跌幅:
             if data['买入价'] == 0 or data['双波谷触发时间'] < data['买入时间']:
                 data['买入价'] = data['双波谷买入价']
                 data['买入时间'] = data['双波谷触发时间']
@@ -426,8 +427,8 @@ def select_buy_price(data_list):
             data['可买金额'] = round(data['买入价'] * data['买入量'])
             data['买入金额'] = data['可买金额']
 
-            if data['买入金额'] > max_use_money_per_stock:
-                data['买入金额'] = max_use_money_per_stock
+            if data['买入金额'] > use_money_per_stock:
+                data['买入金额'] = use_money_per_stock
 
             data['盈亏比'] = round((data['卖出价'] / data['买入价'] - 1) * 100, 2)
             data['盈亏金额'] = round((data['卖出价'] - data['买入价']) * data['买入量'])
@@ -437,8 +438,8 @@ def select_buy_price(data_list):
 
 def count_stock_area_earn_money(data_list, writer):
     ret = 0
-    left_money = 6000 * 10000
-    min_use_money_per_stock = 100 * 10000
+    left_money = 每日资金量 * 10000
+    min_use_money_per_stock = 每只股票最小购买金额 * 10000
 
     for data in data_list:
         if data['买入价'] != 0 and left_money > 0:
@@ -456,26 +457,38 @@ def count_stock_area_earn_money(data_list, writer):
         else:
             data['实际买入金额'] = data['实际盈亏金额'] = 0
 
-        writer.writerow(data)
+        # writer.writerow(data)
     return ret, left_money
 
 
 def select_stocks(data_list, data_list2):
-    stock_per_day = 100
+    stock_per_day = 每日股票池数
     for data in data_list:
         data['打分'] = data['面积']
 
         if data['1日涨停板数'] > 0:
-            data['打分'] += 500
-        if data['3日涨停板数'] > 0:
-            data['打分'] += 250 * (data['3日涨停板数'] - data['1日涨停板数'])
+            data['打分'] += 涨停板数1打分
+        elif data['3日涨停板数'] > 0:
+            # data['打分'] += 涨停板数3打分 * (data['3日涨停板数'] - data['1日涨停板数'])
+            data['打分'] += 涨停板数3打分
         elif data['5日涨停板数'] > 0:
-            data['打分'] += 100 * (data['5日涨停板数'] - data['3日涨停板数'])
+            # data['打分'] += 涨停板数5打分 * (data['5日涨停板数'] - data['3日涨停板数'])
+            data['打分'] += 涨停板数5打分
         elif data['7日涨停板数'] > 0:
-            data['打分'] += 50 * (data['7日涨停板数'] - data['7日涨停板数'])
+            # data['打分'] += 涨停板数7打分 * (data['7日涨停板数'] - data['7日涨停板数'])
+            data['打分'] += 涨停板数7打分
 
         if data['ma30向上'] == 0:
-            data['打分'] -= 50
+            data['打分'] -= ma30打分
+
+        if data['上市天数'] < 最小上市天数:
+            data['打分'] = 0
+
+        if data['观察期收盘价涨幅'] < 观察期收盘价涨幅:
+            data['打分'] = 0
+
+        if data['量比'] < 最小量比:
+            data['打分'] = 0
 
     data_list.sort(key=lambda x: x['打分'], reverse=True)
     for data in data_list[:stock_per_day]:
@@ -484,6 +497,8 @@ def select_stocks(data_list, data_list2):
 
 
 def 运行面积策略():
+    global 每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅
+
     ac = area_cache(work_dir + '面积策略股票池.csv', '09:33:00', '09:52:00', 800)
     ac.build_cache()
 
@@ -504,34 +519,58 @@ def 运行面积策略():
     for date in ret_date:
         date_key[date['date']] = date['datestr']
 
-    earn_money = dict()
-    for date in ts_dates:
-        print('counting ', date)
-        stock_data = ac.get(date, date_key[date])
-        if not stock_data:
-            print("计算个股面积失败, date = ", date)
-            return
+    max_total_earn_money = 0
+    best_factors = None
 
-        data_list = list()
-        for data in stock_data:
-            sc_ret = sc.get(data['key'])
-            if not sc_ret:
-                print("sell price not found, key = ", data['key'])
-                continue
+    file_result = open(work_dir + '回测.txt', 'w')
+    num = 0
+    for factors in list_factors:
+        num += 1
+        total_earn_money = 0
+        每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅 = factors
+        print('%d 每日股票池数(%d) 购买时最大跌幅(%d) ma30打分(%d) 涨停板数1打分(%d) 涨停板数3打分(%d) 涨停板数5打分(%d) 涨停板数7打分(%d) 观察期收盘价涨幅(%d)' %
+              (num, 每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅))
 
-            data['卖出价'] = sc_ret['卖出价']
-            data['卖出日期'] = sc_ret['卖出日期']
-            data_list.append(data)
+        earn_money = dict()
+        for date in ts_dates:
+            # print('counting ', date)
+            stock_data = ac.get(date, date_key[date])
+            if not stock_data:
+                print("计算个股面积失败, date = ", date)
+                return
 
-        data_list2 = list()
-        select_stocks(data_list, data_list2)
-        select_buy_price(data_list2)
-        got_money, left_money = count_stock_area_earn_money(data_list2, writer)
-        if left_money > 0:
-            print("%s left %d\n" % (date, left_money))
-        earn_money[date] = got_money
-    draw_earn_money(earn_money, work_dir, '面积策略收益图', True)
-    fd.close()
+            data_list = list()
+            for data in stock_data:
+                sc_ret = sc.get(data['key'])
+                if not sc_ret:
+                    print("sell price not found, key = ", data['key'])
+                    continue
+
+                data['卖出价'] = sc_ret['卖出价']
+                data['卖出日期'] = sc_ret['卖出日期']
+                data_list.append(data)
+
+            data_list2 = list()
+            select_stocks(data_list, data_list2)
+            select_buy_price(data_list2)
+            got_money, left_money = count_stock_area_earn_money(data_list2, writer)
+            if left_money > 0:
+                print("%s left %d\n" % (date, left_money))
+            earn_money[date] = got_money
+            total_earn_money += got_money
+
+        file_result.write('%d %d %d %d %d %d %d %d %d\n' %
+                          (每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅, total_earn_money))
+        if num % 100 == 0:
+            file_result.flush()
+
+        if total_earn_money > max_total_earn_money:
+            max_total_earn_money = total_earn_money
+            best_factors = factors
+        # draw_earn_money(earn_money, work_dir, '面积策略收益图', True)
+    # fd.close()
+    print('best_factors = ', best_factors)
+    print('max_total_earn_money = ', max_total_earn_money)
 
 
 if __name__ == '__main__':
