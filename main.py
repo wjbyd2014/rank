@@ -507,10 +507,11 @@ def 运行面积策略():
     if not sc.build_cache():
         return
 
-    fd = open(work_dir + '面积策略.csv', mode='w', newline='')
+    writer = None
+    '''fd = open(work_dir + '面积策略.csv', mode='w', newline='')
     writer = csv.DictWriter(fd, fieldnames=ac.field_names + ['打分', '买入时间', '买入价', '卖出价', '卖出日期', '可买金额', '买入金额',
                                                              '盈亏金额', '盈亏比', '实际买入金额', '实际盈亏金额'])
-    writer.writeheader()
+    writer.writeheader()'''
 
     ret_date = get_dates(20220718)
     ret_date.reverse()
@@ -522,6 +523,7 @@ def 运行面积策略():
 
     max_total_earn_money = 0
     best_factors = None
+    date_to_stock_data = dict()
 
     file_result = open(work_dir + '回测.txt', 'w')
     num = 0
@@ -529,30 +531,30 @@ def 运行面积策略():
         num += 1
         total_earn_money = 0
         每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅 = factors
-        print('%d/%d 每日股票池数(%d) 购买时最大跌幅(%d) ma30打分(%d) 涨停板数1打分(%d) 涨停板数3打分(%d) 涨停板数5打分(%d) 涨停板数7打分(%d) 观察期收盘价涨幅(%d)' %
-              (num, len_list_factors, 每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅))
 
         earn_money = dict()
         for date in ts_dates:
             # print('counting ', date)
-            stock_data = ac.get(date, date_key[date])
-            if not stock_data:
-                print("计算个股面积失败, date = ", date)
-                return
+            if num == 1:
+                stock_data = ac.get(date, date_key[date])
+                if not stock_data:
+                    print("计算个股面积失败, date = ", date)
+                    return
 
-            data_list = list()
-            for data in stock_data:
-                sc_ret = sc.get(data['key'])
-                if not sc_ret:
-                    print("sell price not found, key = ", data['key'])
-                    continue
+                data_list = list()
+                for data in stock_data:
+                    sc_ret = sc.get(data['key'])
+                    if not sc_ret:
+                        print("sell price not found, key = ", data['key'])
+                        continue
 
-                data['卖出价'] = sc_ret['卖出价']
-                data['卖出日期'] = sc_ret['卖出日期']
-                data_list.append(data)
+                    data['卖出价'] = sc_ret['卖出价']
+                    data['卖出日期'] = sc_ret['卖出日期']
+                    data_list.append(data)
+                date_to_stock_data[date] = data_list
 
             data_list2 = list()
-            select_stocks(data_list, data_list2)
+            select_stocks(date_to_stock_data[date], data_list2)
             select_buy_price(data_list2)
             got_money, left_money = count_stock_area_earn_money(data_list2, writer)
             if left_money > 0:
@@ -562,6 +564,8 @@ def 运行面积策略():
 
         file_result.write('%d %d %d %d %d %d %d %d %d\n' %
                           (每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅, total_earn_money))
+        print('%d/%d 每日股票池数(%d) 购买时最大跌幅(%d) ma30打分(%d) 涨停板数1打分(%d) 涨停板数3打分(%d) 涨停板数5打分(%d) 涨停板数7打分(%d) 观察期收盘价涨幅(%d) 最大收益(%d)' %
+            (num, len_list_factors, 每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅, max_total_earn_money))
         if num % 100 == 0:
             file_result.flush()
 
