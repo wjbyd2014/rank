@@ -482,14 +482,14 @@ ma30打分 = 50
 def 运行面积策略():
     global 每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅
 
-    每日股票池数因子 = 分箱(100, 100, 20)
-    购买时最大跌幅因子 = 分箱(10, 10, 0.5)
+    每日股票池数因子 = 分箱(100, 100, 10)
+    购买时最大跌幅因子 = 分箱(2, 2, 0.1)
     ma30打分因子 = 分箱(0, 0, 5)
-    涨停板数1打分因子 = 分箱(400, 400, 10)
-    涨停板数3打分因子 = 分箱(200, 200, 10)
+    涨停板数1打分因子 = 分箱(90, 90, 10)
+    涨停板数3打分因子 = 分箱(190, 190, 10)
     涨停板数5打分因子 = 分箱(110, 110, 5)
-    涨停板数7打分因子 = 分箱(40, 40, 5)
-    观察期收盘价涨幅因子 = 分箱(-3, -3, 1)
+    涨停板数7打分因子 = 分箱(1, 1, 1)
+    观察期收盘价涨幅因子 = 分箱(-0.9, -0.9, 0.1)
 
     len_list_factors = 1
     len_list_factors *= len(每日股票池数因子)
@@ -512,11 +512,11 @@ def 运行面积策略():
     if not sc.build_cache():
         return
 
-    writer = None
-    '''fd = open(work_dir + '面积策略.csv', mode='w', newline='')
+    # writer = None
+    fd = open(work_dir + '面积策略.csv', mode='w', newline='')
     writer = csv.DictWriter(fd, fieldnames=ac.field_names + ['打分', '买入时间', '买入价', '卖出价', '卖出日期', '可买金额', '买入金额',
                                                              '盈亏金额', '盈亏比', '实际买入金额', '实际盈亏金额'])
-    writer.writeheader()'''
+    writer.writeheader()
 
     ret_date = get_dates(20220718)
     ret_date.reverse()
@@ -539,7 +539,7 @@ def 运行面积策略():
 
         earn_money = dict()
         for date in ts_dates:
-            # print('counting ', date)
+            print('counting ', date)
             if num == 1:
                 stock_data = ac.get(date, date_key[date])
                 if not stock_data:
@@ -579,8 +579,8 @@ def 运行面积策略():
         if total_earn_money > max_total_earn_money:
             max_total_earn_money = total_earn_money
             best_factors = factors
-        # draw_earn_money(earn_money, work_dir, '面积策略收益图', True)
-    # fd.close()
+        draw_earn_money(earn_money, work_dir, '面积策略收益图', False)
+    fd.close()
     print('best_factors = ', best_factors)
     print('max_total_earn_money = ', max_total_earn_money)
 
