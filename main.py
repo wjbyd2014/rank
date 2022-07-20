@@ -343,49 +343,15 @@ def 分箱(min_value, max_value, interval):
     return ret
 
 
-每日股票池数因子 = 分箱(60, 140, 20)
-购买时最大跌幅因子 = [8, 10]
-ma30打分因子 = 分箱(0, 50, 25)
-涨停板数1打分因子 = 分箱(400, 600, 100)
-涨停板数3打分因子 = 分箱(200, 300, 10)
-涨停板数5打分因子 = 分箱(70, 130, 10)
-涨停板数7打分因子 = 分箱(30, 80, 10)
-观察期收盘价涨幅因子 = 分箱(-5, -3, 1)
-
-list_factors = [[]]
-
-
 def gen_factors(list_params):
-    global list_factors
-    if not list_params:
-        return
-    gen_factors(list_params[1:])
-    new_list_factors = []
-    for param in list_params[0]:
-        for factors in list_factors:
-            new_list_factors.append([param] + factors)
-    list_factors = new_list_factors
-
-
-每日资金量 = 6000
-每只股票最大购买金额 = 1800
-每只股票最小购买金额 = 100
-最小上市天数 = 0
-最小量比 = 0
-
-每日股票池数 = 100
-购买时最大跌幅 = 10
-涨停板数1打分 = 500
-涨停板数3打分 = 250
-涨停板数5打分 = 100
-涨停板数7打分 = 50
-ma30打分 = 50
-观察期收盘价涨幅 = -5
-
-gen_factors([每日股票池数因子, 购买时最大跌幅因子, ma30打分因子,
-             涨停板数1打分因子, 涨停板数3打分因子, 涨停板数5打分因子, 涨停板数7打分因子, 观察期收盘价涨幅因子
-             ])
-len_list_factors = len(list_factors)
+    if len(list_params) == 1:
+        for param in list_params[0]:
+            yield [param]
+    else:
+        list_factor = gen_factors(list_params[1:])
+        for factor in list_factor:
+            for param in list_params[0]:
+                yield [param] + factor
 
 
 def com_buy_price(data1, data2):
@@ -497,8 +463,47 @@ def select_stocks(data_list, data_list2):
         data_list2.append(data)
 
 
+每日资金量 = 6000
+每只股票最大购买金额 = 1800
+每只股票最小购买金额 = 100
+最小上市天数 = 0
+最小量比 = 0
+
+每日股票池数 = 100
+购买时最大跌幅 = 10
+涨停板数1打分 = 500
+涨停板数3打分 = 250
+涨停板数5打分 = 100
+涨停板数7打分 = 50
+ma30打分 = 50
+观察期收盘价涨幅 = -5
+
+
 def 运行面积策略():
     global 每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅
+
+    每日股票池数因子 = 分箱(60, 140, 20)
+    购买时最大跌幅因子 = [8, 10]
+    ma30打分因子 = 分箱(0, 50, 25)
+    涨停板数1打分因子 = 分箱(400, 600, 100)
+    涨停板数3打分因子 = 分箱(200, 300, 10)
+    涨停板数5打分因子 = 分箱(70, 130, 10)
+    涨停板数7打分因子 = 分箱(30, 80, 10)
+    观察期收盘价涨幅因子 = 分箱(-5, -3, 1)
+
+    len_list_factors = 1
+    len_list_factors *= len(每日股票池数因子)
+    len_list_factors *= len(购买时最大跌幅因子)
+    len_list_factors *= len(ma30打分因子)
+    len_list_factors *= len(涨停板数1打分因子)
+    len_list_factors *= len(涨停板数3打分因子)
+    len_list_factors *= len(涨停板数5打分因子)
+    len_list_factors *= len(涨停板数7打分因子)
+    len_list_factors *= len(观察期收盘价涨幅因子)
+
+    list_factors = gen_factors([每日股票池数因子, 购买时最大跌幅因子, ma30打分因子,
+                                涨停板数1打分因子, 涨停板数3打分因子, 涨停板数5打分因子, 涨停板数7打分因子, 观察期收盘价涨幅因子
+                                ])
 
     ac = area_cache(work_dir + '面积策略股票池.csv', '09:33:00', '09:52:00', 800)
     ac.build_cache()
@@ -564,8 +569,10 @@ def 运行面积策略():
 
         file_result.write('%d %d %d %d %d %d %d %d %d\n' %
                           (每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅, total_earn_money))
-        print('%d/%d 每日股票池数(%d) 购买时最大跌幅(%d) ma30打分(%d) 涨停板数1打分(%d) 涨停板数3打分(%d) 涨停板数5打分(%d) 涨停板数7打分(%d) 观察期收盘价涨幅(%d) 最大收益(%d)' %
-            (num, len_list_factors, 每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅, max_total_earn_money))
+        print(
+            '%d/%d 每日股票池数(%d) 购买时最大跌幅(%d) ma30打分(%d) 涨停板数1打分(%d) 涨停板数3打分(%d) 涨停板数5打分(%d) 涨停板数7打分(%d) 观察期收盘价涨幅(%d) 最大收益(%d)' %
+            (num, len_list_factors, 每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅,
+             max_total_earn_money))
         if num % 100 == 0:
             file_result.flush()
 
