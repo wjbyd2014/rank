@@ -402,9 +402,9 @@ def select_buy_price(data_list):
 
     data_list.sort(key=cmp_to_key(com_buy_price), reverse=True)
 
-上交所手续费 = 0#0.00013
-深交所手续费 = 0#0.00011
-印花税 = 0#0.001
+上交所手续费 = 0.00013
+深交所手续费 = 0.00011
+印花税 = 0.001
 def count_stock_area_earn_money(data_list, writer):
     ret = 0
     left_money = 每日资金量 * 10000
@@ -507,7 +507,7 @@ def 运行面积策略(回测模式):
     最小量比因子 = 分箱(5.5, 5.5, 0.5)
     每只股票最大购买金额因子 = 分箱(1800, 1800, 100)
     每只股票最小购买金额因子 = 分箱(170, 170, 10)
-    买入比因子 = 分箱(100, 100, 1)
+    买入比因子 = 分箱(70, 70, 1)
 
     len_list_factors = 1
     len_list_factors *= len(每日股票池数因子)
