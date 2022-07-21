@@ -55,6 +55,8 @@ Begin
             from markettable datekey day+time1 to day+time2 of DefaultStockID() end;
         end
         assert(length(data) = 20);
+
+
         是否涨停 := 0;
         if data[19]['close'] = 今日涨停价 then
             是否涨停 := 1;
@@ -87,11 +89,17 @@ Begin
         量比 := floatn(sum_vol / 前N日平均成交量 * 100, 2);
         买入量 := int(sum_vol / 10);
         买入价 := 计算买入价(stock_name, stock_code, day, data, 今日涨停价, 昨日收盘价, time2);
+
+        开板 := 计算开板(stock_name, stock_code, day, 今日涨停价, 昨日收盘价, time1, 买入价[6]);
+        开板次数 := 开板[0];
+        最大开板回撤 := 开板[1];
+
         arr := array(('名称':stock_name, '代码':stock_code, '量比':量比,
             '上市天数':上市天数,'买入量':买入量, '是否涨停':是否涨停, '观察期收盘价涨幅': 收盘价涨幅, 'ma30向上':均线向上,
             '观察期结束可以直接买入':买入价[0], '观察期结束直接买入价':买入价[1],
             '大回撤开始时间':买入价[2], '大回撤结束时间':买入价[3], '大回撤买入价':买入价[4],
             '上一波谷形成时间': 买入价[5], '双波谷触发时间':买入价[6], '双波谷买入价':买入价[7], '双波谷涨幅':买入价[8],
+            '双波谷前开板次数':开板次数, '双波谷前最大开板回撤':最大开板回撤,
             '交叉点':交叉点, '面积':面积, '1日涨停板数': 涨停板数1, '3日涨停板数':涨停板数3, '5日涨停板数':涨停板数5, '7日涨停板数':涨停板数7));
         if 涨停板数1 > 0 or 涨停板数3 > 0 or 涨停板数5 > 0 then
             有涨停板股票列表 &= arr;
@@ -107,6 +115,63 @@ Begin
     end
     return exportjsonstring(ret);
 End;
+
+function 计算开板(stock_name, stock_code, day, 今日涨停价, 昨日收盘价, time1, 双波谷触发时间);
+begin
+    if 双波谷触发时间 = 0 then
+        双波谷触发时间 := '15:00:00';
+
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_1m()) do
+    begin
+        data := select
+        TimeToStr(["date"]) as "时间",
+        ["close"]
+        from markettable datekey day+time1 to day+StrToTime(双波谷触发时间) of DefaultStockID() end;
+    end
+
+    开板次数 := 0;
+    最大开板回撤 := 100;
+    开板中 := 0;
+    开板回撤 := 0;
+    for idx := 1 to length(data) - 1 do
+    begin
+        if data[idx]['close'] < data[idx-1]['close'] then
+        begin
+            if data[idx-1]['close'] = 今日涨停价 then
+            begin
+                开板次数 += 1;
+                开板中 := 1;
+                开板回撤 := data[idx]['close'];
+            end
+            else if 开板中 = 1 then
+                开板回撤 := data[idx]['close'];
+        end
+        else if data[idx]['close'] > data[idx-1]['close'] then
+        begin
+            if 开板中 then
+            begin
+                开板中 := 0;
+                if 开板回撤 < 最大开板回撤 then
+                    最大开板回撤 := 开板回撤;
+            end
+        end
+    end
+    if 开板中 then
+    begin
+        开板中 := 0;
+        if 开板回撤 < 最大开板回撤 then
+            最大开板回撤 := 开板回撤;
+    end
+
+    if 开板次数 = 0 then
+        return array(0, 0);
+    else
+    begin
+        ratio1 := count_ratio(今日涨停价, 昨日收盘价);
+        ratio2 := count_ratio(最大开板回撤, 昨日收盘价);
+        return array(开板次数, ratio1 - ratio2);
+    end
+end
 
 function 计算交叉点和面积(stock_name, 时间线, 个股分钟线, 大盘分钟线);
 begin
