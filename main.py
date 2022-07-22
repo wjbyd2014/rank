@@ -601,9 +601,9 @@ def 运行面积策略(回测模式):
              max_total_earn_money))
 
         if total_earn_money >= max_total_earn_money:
-            cm.log(max_total_earn_money)
             max_total_earn_money = total_earn_money
             best_factors = factors
+            cm.log(max_total_earn_money)
 
         if not 回测模式:
             draw_earn_money(earn_money, work_dir, '面积策略收益图', False)
