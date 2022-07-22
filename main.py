@@ -374,7 +374,7 @@ def com_buy_price(data1, data2):
 def select_buy_price(data_list):
     use_money_per_stock = 每只股票最大购买金额 * 10000
     for data in data_list:
-        data['买入价'] = data['买入时间'] = data['可买金额'] = data['买入金额'] = data['盈亏金额'] = data['盈亏比'] = 0
+        data['买入价'] = data['买入时间'] = data['可买金额'] = data['计划买入金额'] = data['盈亏金额'] = data['盈亏比'] = 0
 
         """if data['观察期结束直接买入价'] != 0:
             data['买入价'] = data['观察期结束直接买入价']
@@ -392,10 +392,10 @@ def select_buy_price(data_list):
         if data['买入价'] != 0:
             data['买入价'] *= 1.002
             data['可买金额'] = round(data['买入价'] * data['买入量'])
-            data['买入金额'] = data['可买金额'] * (买入比 / 100)
+            data['计划买入金额'] = data['可买金额'] * (买入比 / 100)
 
-            if data['买入金额'] > use_money_per_stock:
-                data['买入金额'] = use_money_per_stock
+            if data['计划买入金额'] > use_money_per_stock:
+                data['计划买入金额'] = use_money_per_stock
 
             data['盈亏比'] = round((data['卖出价'] / data['买入价'] - 1) * 100, 2)
             data['盈亏金额'] = round((data['卖出价'] - data['买入价']) * data['买入量'])
@@ -415,10 +415,10 @@ def count_stock_area_earn_money(data_list, writer):
 
     for data in data_list:
         if data['买入价'] != 0 and left_money > 0:
-            if data['买入金额'] > left_money:
+            if data['计划买入金额'] > left_money:
                 data['实际买入金额'] = left_money
             else:
-                data['实际买入金额'] = data['买入金额']
+                data['实际买入金额'] = data['计划买入金额']
 
             if data['代码'][0:2] == 'SH':
                 手续费 = 上交所手续费
@@ -514,10 +514,10 @@ def 运行面积策略(回测模式):
     每日股票池数因子 = 分箱(100, 100, 10)
     购买时最大跌幅因子 = 分箱(2.4, 2.4, 0.1)
     ma30打分因子 = 分箱(0, 0, 5)
-    涨停板数1打分因子 = 分箱(90, 90, 5)
-    涨停板数3打分因子 = 分箱(225, 225, 5)
-    涨停板数5打分因子 = 分箱(120, 120, 5)
-    涨停板数7打分因子 = 分箱(1, 1, 1)
+    涨停板数1打分因子 = 分箱(86.5, 86.5, 0.5)
+    涨停板数3打分因子 = 分箱(220, 220, 0.5)
+    涨停板数5打分因子 = 分箱(115.5, 115.5, 0.5)
+    涨停板数7打分因子 = 分箱(0, 0, 1)
     观察期收盘价涨幅因子 = 分箱(-0.9, -0.9, 0.1)
     最小上市天数因子 = 分箱(35, 35, 1)
     最小量比因子 = 分箱(5.5, 5.5, 0.5)
@@ -562,8 +562,8 @@ def 运行面积策略(回测模式):
         writer = None
     else:
         fd = open(work_dir + '面积策略.csv', mode='w', newline='')
-        writer = csv.DictWriter(fd, fieldnames=ac.field_names + ['打分', '买入时间', '买入价', '卖出价', '卖出日期', '可买金额', '买入金额',
-                                                                 '盈亏金额', '盈亏比', '实际买入金额', '实际盈亏金额'])
+        writer = csv.DictWriter(fd, fieldnames=ac.field_names + ['打分', '买入时间', '买入价', '卖出价', '卖出日期', '可买金额',
+                                                                 '盈亏金额', '盈亏比', '计划买入金额', '实际买入金额', '实际盈亏金额'])
         writer.writeheader()
 
     ret_date = get_dates(20220718)
@@ -618,18 +618,17 @@ def 运行面积策略(回测模式):
             earn_money[date] = got_money
             total_earn_money += got_money
 
-        file_result.write('%d %0.1f %d %d %d %d %d %d %0.1f %0.1f %d %d %d %d %0.2f %0.2f\n' %
-                          (每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅,
-                           最小上市天数, 最小量比, 每只股票最大购买金额, 每只股票最小购买金额, 买入比, 最大开板数量, 开板最大回撤, total_earn_money / 1800000))
         print(
-            '%d/%d 每日股票池数(%d) 购买时最大跌幅(%0.1f) ma30打分(%d) 涨停板数1打分(%d) 涨停板数3打分(%d) 涨停板数5打分(%d) 涨停板数7打分(%d) 观察期收盘价涨幅(%0.1f) 最小上市天数(%d) 最小量比(%0.1f) 每只股票最大购买金额(%d) 每只股票最小购买金额(%d) 买入比(%d) 最大开板数量(%d) 开板最大回撤(%0.2f) 最大收益(%d)' %
+            '%d/%d 每日股票池数(%d) 购买时最大跌幅(%0.1f) ma30打分(%d) 涨停板数1打分(%0.1f) 涨停板数3打分(%01.f) 涨停板数5打分(%01.f) 涨停板数7打分(%0.1f) 观察期收盘价涨幅(%0.1f) 最小上市天数(%d) 最小量比(%0.1f) 每只股票最大购买金额(%d) 每只股票最小购买金额(%d) 买入比(%d) 最大开板数量(%d) 开板最大回撤(%0.2f) 最大收益(%d)' %
             (num, len_list_factors, 每日股票池数, 购买时最大跌幅, ma30打分,
              涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅,
              最小上市天数, 最小量比, 每只股票最大购买金额, 每只股票最小购买金额, 买入比, 最大开板数量, 开板最大回撤, max_total_earn_money))
-        if num % 100 == 0:
-            file_result.flush()
 
-        if total_earn_money > max_total_earn_money:
+        if total_earn_money >= max_total_earn_money:
+            file_result.write('%d %0.1f %d %0.1f %0.1f %0.1f %0.1f %.1f %d %0.1f %d %d %d %d %0.2f %0.2f\n' %
+                              (每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅,
+                               最小上市天数, 最小量比, 每只股票最大购买金额, 每只股票最小购买金额, 买入比, 最大开板数量, 开板最大回撤, total_earn_money / 1800000))
+            file_result.flush()
             max_total_earn_money = total_earn_money
             best_factors = factors
 
