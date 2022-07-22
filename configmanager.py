@@ -53,9 +53,9 @@ class ConfigManager:
     def log(self, max_total_earn_money):
         log_str = ''
         if self.log_fd:
-            for config_value in self.config_values.values():
-                log_str += str(config_value) + ' '
-            log_str += '%d\n' % max_total_earn_money
+            for config_name in self.config_values:
+                log_str += config_name + '=' + str(self.config_values[config_name]) + ' '
+            log_str += '收益 = %d\n' % max_total_earn_money
             self.log_fd.write(log_str)
             self.log_fd.flush()
 
@@ -64,6 +64,7 @@ class ConfigManager:
             self.log_fd.close()
 
 
+'''
 if __name__ == '__main__':
     cm = ConfigManager('cm.txt')
     cm.add_factor1('v1', 1, 2, 1)
@@ -79,3 +80,4 @@ if __name__ == '__main__':
         cm.update_configs(factors)
         cm.log(1.2345)
         print(cm.get_config_value('v1'), ' ', cm.get_config_value('v2'), ' ', cm.get_config_value('v3'), ' ', cm.get_config_value('v4'))
+'''
