@@ -8,6 +8,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from functools import cmp_to_key
+from configmanager import ConfigManager
 
 sys.path.append("D:\Tinysoft\Analyse.NET")
 import TSLPy3 as ts
@@ -372,7 +373,7 @@ def com_buy_price(data1, data2):
 
 
 def select_buy_price(data_list):
-    use_money_per_stock = 每只股票最大购买金额 * 10000
+    use_money_per_stock = cm.get_config_value('每只股票最大购买金额') * 10000
     for data in data_list:
         data['买入价'] = data['买入时间'] = data['可买金额'] = data['计划买入金额'] = data['盈亏金额'] = data['盈亏比'] = 0
 
@@ -384,7 +385,7 @@ def select_buy_price(data_list):
                 data['买入价'] = data['大回撤买入价']
                 data['买入时间'] = data['大回撤结束时间']"""
 
-        if data['双波谷买入价'] != 0 and data['观察期收盘价涨幅'] - data['双波谷涨幅'] < 购买时最大跌幅:
+        if data['双波谷买入价'] != 0 and data['观察期收盘价涨幅'] - data['双波谷涨幅'] < cm.get_config_value('购买时最大跌幅'):
             if data['买入价'] == 0 or data['双波谷触发时间'] < data['买入时间']:
                 data['买入价'] = data['双波谷买入价']
                 data['买入时间'] = data['双波谷触发时间']
@@ -392,7 +393,7 @@ def select_buy_price(data_list):
         if data['买入价'] != 0:
             data['买入价'] *= 1.002
             data['可买金额'] = round(data['买入价'] * data['买入量'])
-            data['计划买入金额'] = data['可买金额'] * (买入比 / 100)
+            data['计划买入金额'] = data['可买金额'] * (cm.get_config_value('买入比') / 100)
 
             if data['计划买入金额'] > use_money_per_stock:
                 data['计划买入金额'] = use_money_per_stock
@@ -411,7 +412,7 @@ def select_buy_price(data_list):
 def count_stock_area_earn_money(data_list, writer):
     ret = 0
     left_money = 每日资金量 * 10000
-    min_use_money_per_stock = 每只股票最小购买金额 * 10000
+    min_use_money_per_stock = cm.get_config_value('每只股票最小购买金额') * 10000
 
     for data in data_list:
         if data['买入价'] != 0 and left_money > 0:
@@ -444,42 +445,42 @@ def count_stock_area_earn_money(data_list, writer):
 
 
 def select_stocks(data_list, data_list2):
-    stock_per_day = 每日股票池数
+    stock_per_day = cm.get_config_value('每日股票池数')
     for data in data_list:
         data['打分'] = data['面积']
 
         if data['1日涨停板数'] > 0:
-            data['打分'] += 涨停板数1打分
+            data['打分'] += cm.get_config_value('涨停板数1打分')
         elif data['3日涨停板数'] > 0:
             # data['打分'] += 涨停板数3打分 * (data['3日涨停板数'] - data['1日涨停板数'])
-            data['打分'] += 涨停板数3打分
+            data['打分'] += cm.get_config_value('涨停板数3打分')
         elif data['5日涨停板数'] > 0:
             # data['打分'] += 涨停板数5打分 * (data['5日涨停板数'] - data['3日涨停板数'])
-            data['打分'] += 涨停板数5打分
+            data['打分'] += cm.get_config_value('涨停板数5打分')
         elif data['7日涨停板数'] > 0:
             # data['打分'] += 涨停板数7打分 * (data['7日涨停板数'] - data['7日涨停板数'])
-            data['打分'] += 涨停板数7打分
+            data['打分'] += cm.get_config_value('涨停板数7打分')
 
         if data['ma30向上'] == 0:
-            data['打分'] -= ma30打分
+            data['打分'] -= cm.get_config_value('ma30打分')
 
-        if data['上市天数'] < 最小上市天数:
+        if data['上市天数'] < cm.get_config_value('最小上市天数'):
             data['打分'] = 0
             continue
 
-        if data['观察期收盘价涨幅'] < 观察期收盘价涨幅:
+        if data['观察期收盘价涨幅'] < cm.get_config_value('观察期收盘价涨幅'):
             data['打分'] = 0
             continue
 
-        if data['量比'] < 最小量比:
+        if data['量比'] < cm.get_config_value('最小量比'):
             data['打分'] = 0
             continue
 
-        if data['双波谷前开板次数'] > 最大开板数量:
+        if data['双波谷前开板次数'] > cm.get_config_value('最大开板数量'):
             data['打分'] = 0
             continue
 
-        if data['双波谷前开板次数'] > 0 and data['双波谷前最大开板回撤'] > 开板最大回撤:
+        if data['双波谷前开板次数'] > 0 and data['双波谷前最大开板回撤'] > cm.get_config_value('开板最大回撤'):
             data['打分'] = 0
             continue
 
@@ -491,64 +492,27 @@ def select_stocks(data_list, data_list2):
 
 每日资金量 = 6000
 
-每日股票池数 = 100
-购买时最大跌幅 = 10
-涨停板数1打分 = 500
-涨停板数3打分 = 250
-涨停板数5打分 = 100
-涨停板数7打分 = 50
-ma30打分 = 50
-观察期收盘价涨幅 = -5
-最小上市天数 = 0
-最小量比 = 0
-每只股票最大购买金额 = 1800
-每只股票最小购买金额 = 100
-买入比 = 100
-最大开板数量 = 0
-开板最大回撤 = 0
+cm = ConfigManager(work_dir + '回测.txt')
+cm.add_factor1('每日股票池数', 100, 100, 10)
+cm.add_factor1('购买时最大跌幅', 2.4, 2.4, 0.1)
+cm.add_factor1('ma30打分', 0, 0, 5)
+cm.add_factor1('涨停板数1打分', 86.5, 86.5, 0.5)
+cm.add_factor1('涨停板数3打分', 220, 220, 0.5)
+cm.add_factor1('涨停板数5打分', 115.5, 115.5, 0.5)
+cm.add_factor1('涨停板数7打分', 0, 0, 1)
+cm.add_factor1('观察期收盘价涨幅', -0.9, -0.9, 0.1)
+cm.add_factor1('最小上市天数', 35, 35, 1)
+cm.add_factor1('最小量比', 5.5, 5.5, 0.5)
+cm.add_factor1('每只股票最大购买金额', 3600, 3600, 100)
+cm.add_factor1('每只股票最小购买金额', 170, 170, 10)
+cm.add_factor1('买入比', 50, 50, 1)
+cm.add_factor1('最大开板数量', 8, 8, 1)
+cm.add_factor1('开板最大回撤', 7.5, 7.5, 0.5)
 
 
 def 运行面积策略(回测模式):
-    global 每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅, 最小上市天数, 最小量比, 每只股票最大购买金额, 每只股票最小购买金额, 买入比, 最大开板数量, 开板最大回撤
-
-    每日股票池数因子 = 分箱(100, 100, 10)
-    购买时最大跌幅因子 = 分箱(2.4, 2.4, 0.1)
-    ma30打分因子 = 分箱(0, 0, 5)
-    涨停板数1打分因子 = 分箱(86.5, 86.5, 0.5)
-    涨停板数3打分因子 = 分箱(220, 220, 0.5)
-    涨停板数5打分因子 = 分箱(115.5, 115.5, 0.5)
-    涨停板数7打分因子 = 分箱(0, 0, 1)
-    观察期收盘价涨幅因子 = 分箱(-0.9, -0.9, 0.1)
-    最小上市天数因子 = 分箱(35, 35, 1)
-    最小量比因子 = 分箱(5.5, 5.5, 0.5)
-    每只股票最大购买金额因子 = 分箱(3600, 3600, 100)
-    每只股票最小购买金额因子 = 分箱(170, 170, 10)
-    买入比因子 = 分箱(50, 50, 1)
-    最大开板数量因子 = 分箱(8, 8, 1)
-    开板最大回撤因子 = 分箱(7.5, 7.5, 0.5)
-
-    len_list_factors = 1
-    len_list_factors *= len(每日股票池数因子)
-    len_list_factors *= len(购买时最大跌幅因子)
-    len_list_factors *= len(ma30打分因子)
-    len_list_factors *= len(涨停板数1打分因子)
-    len_list_factors *= len(涨停板数3打分因子)
-    len_list_factors *= len(涨停板数5打分因子)
-    len_list_factors *= len(涨停板数7打分因子)
-    len_list_factors *= len(观察期收盘价涨幅因子)
-    len_list_factors *= len(最小上市天数因子)
-    len_list_factors *= len(最小量比因子)
-    len_list_factors *= len(每只股票最大购买金额因子)
-    len_list_factors *= len(每只股票最小购买金额因子)
-    len_list_factors *= len(买入比因子)
-    len_list_factors *= len(最大开板数量因子)
-    len_list_factors *= len(开板最大回撤因子)
-
-    list_factors = gen_factors([每日股票池数因子, 购买时最大跌幅因子, ma30打分因子,
-                                涨停板数1打分因子, 涨停板数3打分因子, 涨停板数5打分因子, 涨停板数7打分因子, 观察期收盘价涨幅因子,
-                                最小上市天数因子, 最小量比因子, 每只股票最大购买金额因子, 每只股票最小购买金额因子, 买入比因子,
-                                最大开板数量因子, 开板最大回撤因子
-                                ])
+    len_list_factors = cm.len_factors()
+    list_factors = cm.gen_factors()
 
     ac = area_cache(work_dir + '面积策略股票池.csv', '09:33:00', '09:52:00', 800)
     ac.build_cache()
@@ -578,13 +542,11 @@ def 运行面积策略(回测模式):
     best_factors = None
     date_to_stock_data = dict()
 
-    file_result = open(work_dir + '回测.txt', 'w')
     num = 0
     for factors in list_factors:
         num += 1
         total_earn_money = 0
-        每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, \
-        观察期收盘价涨幅, 最小上市天数, 最小量比, 每只股票最大购买金额, 每只股票最小购买金额, 买入比, 最大开板数量, 开板最大回撤 = factors
+        cm.update_configs(factors)
 
         earn_money = dict()
         for date in ts_dates:
@@ -620,15 +582,26 @@ def 运行面积策略(回测模式):
 
         print(
             '%d/%d 每日股票池数(%d) 购买时最大跌幅(%0.1f) ma30打分(%d) 涨停板数1打分(%0.1f) 涨停板数3打分(%01.f) 涨停板数5打分(%01.f) 涨停板数7打分(%0.1f) 观察期收盘价涨幅(%0.1f) 最小上市天数(%d) 最小量比(%0.1f) 每只股票最大购买金额(%d) 每只股票最小购买金额(%d) 买入比(%d) 最大开板数量(%d) 开板最大回撤(%0.2f) 最大收益(%d)' %
-            (num, len_list_factors, 每日股票池数, 购买时最大跌幅, ma30打分,
-             涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅,
-             最小上市天数, 最小量比, 每只股票最大购买金额, 每只股票最小购买金额, 买入比, 最大开板数量, 开板最大回撤, max_total_earn_money))
+            (num, len_list_factors,
+             cm.get_config_value('每日股票池数'),
+             cm.get_config_value('购买时最大跌幅'),
+             cm.get_config_value('ma30打分'),
+             cm.get_config_value('涨停板数1打分'),
+             cm.get_config_value('涨停板数3打分'),
+             cm.get_config_value('涨停板数5打分'),
+             cm.get_config_value('涨停板数7打分'),
+             cm.get_config_value('观察期收盘价涨幅'),
+             cm.get_config_value('最小上市天数'),
+             cm.get_config_value('最小量比'),
+             cm.get_config_value('每只股票最大购买金额'),
+             cm.get_config_value('每只股票最小购买金额'),
+             cm.get_config_value('买入比'),
+             cm.get_config_value('最大开板数量'),
+             cm.get_config_value('开板最大回撤'),
+             max_total_earn_money))
 
         if total_earn_money >= max_total_earn_money:
-            file_result.write('%d %0.1f %d %0.1f %0.1f %0.1f %0.1f %.1f %d %0.1f %d %d %d %d %0.2f %0.2f\n' %
-                              (每日股票池数, 购买时最大跌幅, ma30打分, 涨停板数1打分, 涨停板数3打分, 涨停板数5打分, 涨停板数7打分, 观察期收盘价涨幅,
-                               最小上市天数, 最小量比, 每只股票最大购买金额, 每只股票最小购买金额, 买入比, 最大开板数量, 开板最大回撤, total_earn_money / 1800000))
-            file_result.flush()
+            cm.log(max_total_earn_money)
             max_total_earn_money = total_earn_money
             best_factors = factors
 
