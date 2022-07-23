@@ -220,7 +220,7 @@ class area_cache:
             return self.cache[key]
         else:
             ts_data = ts.F执行语句(self.code,
-                            {'day': key, 'time1': self.time1, 'time2': self.time2, 'num': self.num})
+                               {'day': key, 'time1': self.time1, 'time2': self.time2, 'num': self.num})
 
             if not self.fd:
                 new_file = not os.path.exists(self.csv_file_name)
@@ -463,26 +463,41 @@ def 运行面积策略(回测模式):
                 print("%s left %d\n" % (date, left_money))
             earn_money[date] = got_money
             total_earn_money += got_money
+
         '''
         print(
-            '%d/%d 每日股票池数(%d) 购买时最大跌幅(%0.1f) ma30打分(%d) 涨停板数1打分(%0.1f) 涨停板数3打分(%01.f) 涨停板数5打分(%01.f) 涨停板数7打分(%0.1f) 观察期收盘价涨幅(%0.1f) 最小上市天数(%d) 最小量比(%0.1f) 每只股票最大购买金额(%d) 每只股票最小购买金额(%d) 买入比(%d) 最大开板数量(%d) 开板最大回撤(%0.2f) 最大收益(%d)' %
-            (num, len_list_factors,
-             cm.get_config_value('每日股票池数'),
-             cm.get_config_value('购买时最大跌幅'),
-             cm.get_config_value('ma30打分'),
-             cm.get_config_value('涨停板数1打分'),
-             cm.get_config_value('涨停板数3打分'),
-             cm.get_config_value('涨停板数5打分'),
-             cm.get_config_value('涨停板数7打分'),
-             cm.get_config_value('观察期收盘价涨幅'),
-             cm.get_config_value('最小上市天数'),
-             cm.get_config_value('最小量比'),
-             cm.get_config_value('每只股票最大购买金额'),
-             cm.get_config_value('每只股票最小购买金额'),
-             cm.get_config_value('买入比'),
-             cm.get_config_value('最大开板数量'),
-             cm.get_config_value('开板最大回撤'),
-             max_total_earn_money))
+            '{}/{} '
+            '每日股票池数({}) '
+            '购买时最大跌幅({}) '
+            'ma30打分({}) '
+            '涨停板数1打分({:.1f}) '
+            '涨停板数3打分({}) '
+            '涨停板数5打分({}) '
+            '涨停板数7打分({}) '
+            '观察期收盘价涨幅({}) '
+            '最小上市天数({}) '
+            '最小量比({}) '
+            '每只股票最大购买金额({}) '
+            '每只股票最小购买金额({}) '
+            '买入比({}) 最大开板数量({}) 开板最大回撤({}) 最大收益({})'.format(
+                num, len_list_factors,
+                cm.get_config_value('每日股票池数'),
+                cm.get_config_value('购买时最大跌幅'),
+                cm.get_config_value('ma30打分'),
+                cm.get_config_value('涨停板数1打分'),
+                cm.get_config_value('涨停板数3打分'),
+                cm.get_config_value('涨停板数5打分'),
+                cm.get_config_value('涨停板数7打分'),
+                cm.get_config_value('观察期收盘价涨幅'),
+                cm.get_config_value('最小上市天数'),
+                cm.get_config_value('最小量比'),
+                cm.get_config_value('每只股票最大购买金额'),
+                cm.get_config_value('每只股票最小购买金额'),
+                cm.get_config_value('买入比'),
+                cm.get_config_value('最大开板数量'),
+                cm.get_config_value('开板最大回撤'),
+                max_total_earn_money)
+        )
         '''
 
         if total_earn_money >= max_total_earn_money:
