@@ -1,7 +1,5 @@
-import json
 import os
 import re
-import sys
 import csv
 import pandas as pd
 import matplotlib
@@ -9,110 +7,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 from functools import cmp_to_key
 from configmanager import ConfigManager
-
-sys.path.append("D:\Tinysoft\Analyse.NET")
-import TSLPy3 as ts
+from tinysoft import TinySoft
 
 work_dir = "D:\\ts\\"
-
-
-def tsbytestostr(data):
-    if isinstance(data, tuple) or isinstance(data, list):
-        lent = len(data)
-        ret = []
-
-        for i in range(lent):
-            ret.append(tsbytestostr(data[i]))
-    elif isinstance(data, dict):
-        lent = len(data)
-        ret = {}
-        for i in data:
-            ret[tsbytestostr(i)] = tsbytestostr(data[i])
-    elif isinstance(data, bytes):
-        ret = data.decode('gbk', errors='ignore')
-    else:
-        ret = data
-    return ret
-
-
-def F执行函数(func_name, pmlist):
-    if not ts.Logined():
-        F连接服务器()
-    data1 = ts.RemoteCallFunc(func_name,
-                              pmlist, {})
-    data1 = tsbytestostr(data1[1])
-    return data1
-
-
-def F执行语句(ts_str, pmdict=None, unencode=True):
-    if not ts.Logined():
-        F连接服务器()
-
-    if pmdict is not None:
-        ts_str1 = ts_str.format(**pmdict)
-        datar = ts.RemoteExecute(ts_str1, {})
-    else:
-        datar = ts.RemoteExecute(ts_str, {})
-    data1 = datar[1]
-    if not unencode:
-        return data1
-    if type(data1) == bytes:
-        data1 = json.loads(data1)
-    if type(data1) != list:
-        print('F执行语句不是list', tsbytestostr(datar), ts_str)
-        return []
-    return data1
-
-
-def F生成天软日期_str(one_day: str):
-    one_day = re.split('[-/]', one_day)
-    ts_day = ts.EncodeDate(int(one_day[0]), int(one_day[1]), int(one_day[2]))
-    return ts_day
-
-
-def F读取脚本文件(filename):
-    with open(work_dir + filename, 'r', encoding='utf-8') as f:
-        ts_str = f.read()
-    return ts_str
-
-
-def F连接服务器(b配置文件=True):
-    if not ts.Logined():
-        if b配置文件:
-            dl = ts.DefaultConnectAndLogin("test")
-        else:
-            ts.ConnectServer("219.143.214.209", 888)
-            # ts.ConnectServer("211.100.23.205",443)
-            dl = ts.LoginServer("liuzhiyong", "Zoos_600809")  # Tuple(ErrNo,ErrMsg) 登陆用户
-        if dl[0] == 0:
-            print("登陆成功")
-            print("服务器设置:", ts.GetService())
-            ts.SetComputeBitsOption(64)  # 设置计算单位
-            print("计算位数设置:", ts.GetComputeBitsOption())
-            data = ts.RemoteExecute("return 'return a string';", {})  # 执行一条语句
-            print("数据:", data)
-        else:
-            print("登陆失败", tsbytestostr(dl[1]))
-        return
-    print('已连接,无需重连')
-
-
-def F断开服务器():
-    if ts.Logined():
-        ts.Disconnect()  # 断开连接
-        print('断开成功')
-    print('未连接,无需断开')
-
-
-def get_dates(day):
-    code = F读取脚本文件("dates.js")
-    return F执行语句(code, {'day': day})
+ts = TinySoft(work_dir)
+ts.F断开服务器()
+ts.F连接服务器(b配置文件=False)
 
 
 class pkje_cache(object):
     def __init__(self, code_file_name, csv_file_name):
         self.cache = dict()
-        self.code = F读取脚本文件(code_file_name)
+        self.code = ts.F读取脚本文件(code_file_name)
         self.csv_file_name = work_dir + csv_file_name
         self.fieldnames = ['key', '竞价涨幅', '买一价', '盘口金额', '早盘跌停盘口比']
         self.fd = None
@@ -152,7 +58,7 @@ class pkje_cache(object):
         print('downloading key %s' % key)
         day = key_[0]
         stock = key_[1]
-        ret_data = F执行语句(self.code, {'day_': F生成天软日期_str(day), 'stockcode_': stock[2:]})
+        ret_data = ts.F执行语句(self.code, {'day_': ts.F生成天软日期_str(day), 'stockcode_': stock[2:]})
 
         if not self.fd:
             new_file = not os.path.exists(self.csv_file_name)
@@ -225,7 +131,7 @@ class sell_cache(object):
             return None
 
 
-def draw_earn_money(day_earn_money, work_dir, title, show_picture):
+def draw_earn_money(day_earn_money, title, show_picture):
     earn_money = 0
     d = dict()
     for day in day_earn_money:
@@ -282,7 +188,7 @@ class area_cache:
                                     '双波谷买入价': float, '双波谷涨幅': float, '双波谷前开板次数': int, '双波谷前最大开板回撤': float,
                                     '1日涨停板数': int, '3日涨停板数': int, '5日涨停板数': int, '7日涨停板数': int}
 
-        self.code = F读取脚本文件("mianji.js")
+        self.code = ts.F读取脚本文件("mianji.js")
         self.fd = None
         self.writer = None
 
@@ -313,7 +219,7 @@ class area_cache:
         if key in self.cache:
             return self.cache[key]
         else:
-            ts_data = F执行语句(self.code,
+            ts_data = ts.F执行语句(self.code,
                             {'day': key, 'time1': self.time1, 'time2': self.time2, 'num': self.num})
 
             if not self.fd:
@@ -333,26 +239,6 @@ class area_cache:
     def __del__(self):
         if self.fd:
             self.fd.close()
-
-
-def 分箱(min_value, max_value, interval):
-    ret = list()
-    value = min_value
-    while value <= max_value:
-        ret.append(value)
-        value += interval
-    return ret
-
-
-def gen_factors(list_params):
-    if len(list_params) == 1:
-        for param in list_params[0]:
-            yield [param]
-    else:
-        list_factor = gen_factors(list_params[1:])
-        for factor in list_factor:
-            for param in list_params[0]:
-                yield [param] + factor
 
 
 def com_buy_price(data1, data2):
@@ -452,13 +338,10 @@ def select_stocks(data_list, data_list2):
         if data['1日涨停板数'] > 0:
             data['打分'] += cm.get_config_value('涨停板数1打分')
         elif data['3日涨停板数'] > 0:
-            # data['打分'] += 涨停板数3打分 * (data['3日涨停板数'] - data['1日涨停板数'])
             data['打分'] += cm.get_config_value('涨停板数3打分')
         elif data['5日涨停板数'] > 0:
-            # data['打分'] += 涨停板数5打分 * (data['5日涨停板数'] - data['3日涨停板数'])
             data['打分'] += cm.get_config_value('涨停板数5打分')
         elif data['7日涨停板数'] > 0:
-            # data['打分'] += 涨停板数7打分 * (data['7日涨停板数'] - data['7日涨停板数'])
             data['打分'] += cm.get_config_value('涨停板数7打分')
 
         if data['ma30向上'] == 0:
@@ -512,6 +395,7 @@ cm.add_factor1('开板最大回撤', 7.5, 7.5, 0.5)
 
 def 运行面积策略(回测模式):
     len_list_factors = cm.len_factors()
+    print('len_list_factors = ', len_list_factors)
     list_factors = cm.gen_factors()
 
     ac = area_cache(work_dir + '面积策略股票池.csv', '09:33:00', '09:52:00', 800)
@@ -530,7 +414,7 @@ def 运行面积策略(回测模式):
                                                                  '盈亏金额', '盈亏比', '计划买入金额', '实际买入金额', '实际盈亏金额'])
         writer.writeheader()
 
-    ret_date = get_dates(20220718)
+    ret_date = ts.get_dates(20220718)
     ret_date.reverse()
 
     ts_dates = [date['date'] for date in ret_date]
@@ -579,7 +463,7 @@ def 运行面积策略(回测模式):
                 print("%s left %d\n" % (date, left_money))
             earn_money[date] = got_money
             total_earn_money += got_money
-
+        '''
         print(
             '%d/%d 每日股票池数(%d) 购买时最大跌幅(%0.1f) ma30打分(%d) 涨停板数1打分(%0.1f) 涨停板数3打分(%01.f) 涨停板数5打分(%01.f) 涨停板数7打分(%0.1f) 观察期收盘价涨幅(%0.1f) 最小上市天数(%d) 最小量比(%0.1f) 每只股票最大购买金额(%d) 每只股票最小购买金额(%d) 买入比(%d) 最大开板数量(%d) 开板最大回撤(%0.2f) 最大收益(%d)' %
             (num, len_list_factors,
@@ -599,14 +483,18 @@ def 运行面积策略(回测模式):
              cm.get_config_value('最大开板数量'),
              cm.get_config_value('开板最大回撤'),
              max_total_earn_money))
+        '''
 
         if total_earn_money >= max_total_earn_money:
             max_total_earn_money = total_earn_money
             best_factors = factors
             cm.log(max_total_earn_money)
 
+        if num % 100 == 0:
+            print("num = ", num, ' 当前最大收益 = ', max_total_earn_money)
+
         if not 回测模式:
-            draw_earn_money(earn_money, work_dir, '面积策略收益图', False)
+            draw_earn_money(earn_money, '面积策略收益图', False)
 
     if not 回测模式:
         fd.close()
@@ -615,6 +503,4 @@ def 运行面积策略(回测模式):
 
 
 if __name__ == '__main__':
-    F断开服务器()
-    F连接服务器(b配置文件=False)
     运行面积策略(False)
