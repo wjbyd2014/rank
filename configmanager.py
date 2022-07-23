@@ -55,7 +55,7 @@ class ConfigManager:
         if self.log_fd:
             for config_name in self.config_values:
                 log_str += config_name + '=' + str(self.config_values[config_name]) + ' '
-            log_str += '收益 = %d\n' % max_total_earn_money
+            log_str += '收益 = {}\n'.format(max_total_earn_money)
             self.log_fd.write(log_str)
             self.log_fd.flush()
 
