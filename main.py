@@ -8,127 +8,13 @@ import numpy as np
 from functools import cmp_to_key
 from configmanager import ConfigManager
 from tinysoft import TinySoft
+from csvcache import ReadOnlyCsvCache
+from csvcache import ReadWriteDateCsvCache
 
 work_dir = "D:\\ts\\"
 ts = TinySoft(work_dir)
 ts.F断开服务器()
 ts.F连接服务器(b配置文件=False)
-
-
-class pkje_cache(object):
-    def __init__(self, code_file_name, csv_file_name):
-        self.cache = dict()
-        self.code = ts.F读取脚本文件(code_file_name)
-        self.csv_file_name = work_dir + csv_file_name
-        self.fieldnames = ['key', '竞价涨幅', '买一价', '盘口金额', '早盘跌停盘口比']
-        self.fd = None
-        self.writer = None
-
-    def build_cache(self):
-        if not os.path.exists(self.csv_file_name):
-            return False
-
-        with open(self.csv_file_name, mode='r', newline='') as csv_file:
-            reader = csv.DictReader(csv_file)
-            for row in reader:
-                if row['key'] in self.cache:
-                    print('重复key(%s) in pkje_cache' % row['key'])
-                    return False
-
-                if row['竞价涨幅'] == 'N/A':
-                    self.cache[row['key']] = None
-                    continue
-
-                jjzf = float(row['竞价涨幅'])
-                myj = float(row['买一价'])
-                pkje = float(row['盘口金额'])
-                zpdtpkb = float(row['早盘跌停盘口比'])
-                self.cache[row['key']] = {'竞价涨幅': jjzf, '买一价': myj, '盘口金额': pkje, '早盘跌停盘口比': zpdtpkb}
-
-        return True
-
-    def get(self, key):
-        if key in self.cache:
-            return self.cache[key]
-
-        key_ = key.split('|')
-        if len(key_) != 2:
-            return None
-
-        print('downloading key %s' % key)
-        day = key_[0]
-        stock = key_[1]
-        ret_data = ts.F执行语句(self.code, {'day_': ts.F生成天软日期_str(day), 'stockcode_': stock[2:]})
-
-        if not self.fd:
-            new_file = not os.path.exists(self.csv_file_name)
-            self.fd = open(self.csv_file_name, mode='a', newline='')
-            self.writer = csv.DictWriter(self.fd, fieldnames=self.fieldnames)
-            if new_file:
-                self.writer.writeheader()
-
-        if not ret_data:
-            data = {
-                'key': key,
-                '竞价涨幅': 'N/A'
-            }
-            self.cache[key] = None
-        else:
-            data = {
-                'key': key,
-                '竞价涨幅': ret_data[0]['竞价涨幅'],
-                '买一价': ret_data[0]['买一价'],
-                '盘口金额': ret_data[0]['盘口金额'],
-                '早盘跌停盘口比': ret_data[0]['早盘跌停盘口比']
-            }
-            self.cache[key] = ret_data[0]
-
-        self.writer.writerow(data)
-        return self.cache[key]
-
-    def __del__(self):
-        if self.fd:
-            self.fd.close()
-
-
-class sell_cache(object):
-    def __init__(self, selled_csv_file_name, not_selled_csv_file_name):
-        self.cache = dict()
-        self.selled_csv_file_name = work_dir + selled_csv_file_name
-        self.not_selled_csv_file_name = work_dir + not_selled_csv_file_name
-
-    def build_cache(self):
-        if not os.path.exists(self.selled_csv_file_name):
-            print("卖出文件未找到")
-            return True
-
-        if not os.path.exists(self.not_selled_csv_file_name):
-            print("未卖出文件未找到")
-            return True
-
-        for csv_file_name in [self.selled_csv_file_name, self.not_selled_csv_file_name]:
-            with open(csv_file_name, mode='r', newline='') as csv_file:
-                reader = csv.DictReader(csv_file)
-                for row in reader:
-                    key = row['key']
-                    if key in self.cache and self.cache[key]['卖出价'] != float(row['卖出价']):
-                        print('重复key(%s) in sell_cache, 而且卖出价不一致' % row['key'])
-                        continue
-
-                    sell_price = row['卖出价']
-                    sell_day = row['卖出日期']
-                    self.cache[key] = {
-                        '卖出价': float(sell_price),
-                        '卖出日期': sell_day
-                    }
-
-        return True
-
-    def get(self, key):
-        if key in self.cache:
-            return self.cache[key]
-        else:
-            return None
 
 
 def draw_earn_money(day_earn_money, title, show_picture):
@@ -165,80 +51,6 @@ def draw_earn_money(day_earn_money, title, show_picture):
         f = plt.gcf()  # 获取当前图像
         path = work_dir + '{}.png'.format(title)
         f.savefig(path)
-
-
-class area_cache:
-    def __init__(self, csv_file_name, time1, time2, num):
-        self.cache = dict()
-        self.time1 = time1
-        self.time2 = time2
-        self.num = num
-        self.csv_file_name = csv_file_name
-        self.field_names = ['key', '日期', '代码', '名称', '量比',
-                            '上市天数', '买入量', '1日涨停板数', '3日涨停板数', '5日涨停板数', '7日涨停板数',
-                            '是否涨停', '观察期收盘价涨幅', 'ma30向上',
-                            '交叉点', '面积',
-                            '观察期结束可以直接买入', '观察期结束直接买入价', '大回撤开始时间', '大回撤结束时间', '大回撤买入价',
-                            '上一波谷形成时间', '双波谷触发时间', '双波谷买入价', '双波谷涨幅',
-                            '双波谷前开板次数', '双波谷前最大开板回撤']
-        self.convert_field_names = {'量比': float,
-                                    '上市天数': int, '买入量': float, '是否涨停': int, '观察期收盘价涨幅': float,
-                                    '面积': float, 'ma30向上': int,
-                                    '观察期结束可以直接买入': int, '观察期结束直接买入价': float, '大回撤买入价': float,
-                                    '双波谷买入价': float, '双波谷涨幅': float, '双波谷前开板次数': int, '双波谷前最大开板回撤': float,
-                                    '1日涨停板数': int, '3日涨停板数': int, '5日涨停板数': int, '7日涨停板数': int}
-
-        self.code = ts.F读取脚本文件("mianji.js")
-        self.fd = None
-        self.writer = None
-
-    def build_cache(self):
-        if not os.path.exists(self.csv_file_name):
-            return
-
-        with open(self.csv_file_name, mode='r', newline='') as csv_file:
-            reader = csv.DictReader(csv_file)
-            for row in reader:
-                key = row['key']
-                key_ = key.split('|')
-                if len(key_) != 2:
-                    return None
-
-                day = key_[0]
-                one_day = re.split('[-/]', day)
-                day = int(one_day[0]) * 10000 + int(one_day[1]) * 100 + int(one_day[2])
-                data = {}
-                for field in self.field_names:
-                    data[field] = row[field]
-                self.cache.setdefault(day, list())
-                for field in self.convert_field_names:
-                    data[field] = self.convert_field_names[field](data[field])
-                self.cache[day].append(data)
-
-    def get(self, key, date_str):
-        if key in self.cache:
-            return self.cache[key]
-        else:
-            ts_data = ts.F执行语句(self.code,
-                               {'day': key, 'time1': self.time1, 'time2': self.time2, 'num': self.num})
-
-            if not self.fd:
-                new_file = not os.path.exists(self.csv_file_name)
-                self.fd = open(self.csv_file_name, mode='a', newline='')
-                self.writer = csv.DictWriter(self.fd, fieldnames=self.field_names)
-                if new_file:
-                    self.writer.writeheader()
-
-            for data in ts_data:
-                data['key'] = date_str + '|' + data['代码']
-                data['日期'] = date_str
-                self.writer.writerow(data)
-            self.cache[key] = ts_data
-            return ts_data
-
-    def __del__(self):
-        if self.fd:
-            self.fd.close()
 
 
 def com_buy_price(data1, data2):
@@ -398,10 +210,24 @@ def 运行面积策略(回测模式):
     print('len_list_factors = ', len_list_factors)
     list_factors = cm.gen_factors()
 
-    ac = area_cache(work_dir + '面积策略股票池.csv', '09:33:00', '09:52:00', 800)
+    ac = ReadWriteDateCsvCache('area_cache', work_dir,
+                               {'日期': str, '代码': str, '名称': str, '量比': float, '上市天数': int, '买入量': float,
+                                '1日涨停板数': int, '3日涨停板数': int, '5日涨停板数': int, '7日涨停板数': int,
+                                '是否涨停': int, '观察期收盘价涨幅': float, 'ma30向上': int,
+                                '交叉点': str, '面积': float,
+                                '观察期结束可以直接买入': int, '观察期结束直接买入价': float,
+                                '大回撤开始时间': str, '大回撤结束时间': str, '大回撤买入价': float,
+                                '上一波谷形成时间': str, '双波谷触发时间': str, '双波谷买入价': float, '双波谷涨幅': float,
+                                '双波谷前开板次数': int, '双波谷前最大开板回撤': float},
+                               ts,
+                               'mianji.js', {'time1': '09:33:00', 'time2': '09:52:00', 'num': 800},
+                               '面积策略股票池.csv'
+                               )
     ac.build_cache()
 
-    sc = sell_cache('卖出明细30.csv', '卖出明细30_未完全卖出.csv')
+    sc = ReadOnlyCsvCache('sell_cache', work_dir,
+                          {'卖出价': float, '卖出日期': str},
+                          ['卖出明细30.csv', '卖出明细30_未完全卖出.csv'])
     if not sc.build_cache():
         return
 
@@ -410,8 +236,9 @@ def 运行面积策略(回测模式):
         writer = None
     else:
         fd = open(work_dir + '面积策略.csv', mode='w', newline='')
-        writer = csv.DictWriter(fd, fieldnames=ac.field_names + ['打分', '买入时间', '买入价', '卖出价', '卖出日期', '可买金额',
-                                                                 '盈亏金额', '盈亏比', '计划买入金额', '实际买入金额', '实际盈亏金额'])
+        field_names = ['key'] + list(ac.fields_dict.keys()) + ['打分', '买入时间', '买入价', '卖出价', '卖出日期', '可买金额',
+                                                               '盈亏金额', '盈亏比', '计划买入金额', '实际买入金额', '实际盈亏金额']
+        writer = csv.DictWriter(fd, fieldnames=field_names)
         writer.writeheader()
 
     ret_date = ts.get_dates(20220718)
