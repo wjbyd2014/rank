@@ -1,8 +1,8 @@
 Function 盘口金额();
 Begin
-    day := {day_};
+    day := {day};
 
-    with *,array(pn_Stock():'{stockcode_}',PN_Date():day,pn_rate():0,pn_rateday():0) do
+    with *,array(pn_Stock():'{stock_code}',PN_Date():day,pn_rate():0,pn_rateday():0) do
     begin
         timeSt := StrToTime("09:24:30");
         timeEnd := StrToTime("09:25:00")-0.00001;
@@ -17,6 +17,9 @@ Begin
             floatn(getcol(["sale1"]=dtj,(["sc2"]+["sc1"])/["sc1"]),4) as "早盘跌停盘口比"
             from tradetable datekey day+timeSt to day+timeEnd of DefaultStockID() end;
     end
+
+    if not ret then
+        ret := array(("竞价涨幅":0, "买一价":0, "盘口金额":0, "早盘跌停盘口比":0));
     return exportjsonstring(ret);
 End;
 
