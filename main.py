@@ -1,57 +1,15 @@
-import os
-import re
 import csv
-import pandas as pd
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
 from functools import cmp_to_key
-from configmanager import ConfigManager
+from config_manager import ConfigManager
 from tinysoft import TinySoft
-from csvcache import ReadOnlyCsvCache
-from csvcache import ReadWriteDateCsvCache
+from csv_cache import ReadOnlyCsvCache
+from csv_cache import ReadWriteDateCsvCache
+from strategy_utils import *
 
 work_dir = "D:\\ts\\"
 ts = TinySoft(work_dir)
 ts.F断开服务器()
 ts.F连接服务器(b配置文件=False)
-
-
-def draw_earn_money(day_earn_money, title, show_picture):
-    earn_money = 0
-    d = dict()
-    for day in day_earn_money:
-        earn_money += day_earn_money[day]
-        d[pd.to_datetime(str(day))] = [earn_money / 10000]
-
-    matplotlib.rcParams['font.sans-serif'] = ['SimHei']
-    matplotlib.rcParams['font.family'] = 'sans-serif'
-    matplotlib.rcParams['axes.unicode_minus'] = False
-
-    df = pd.DataFrame(d.values(), index=list(d.keys()), columns=['总收益'])
-    ymax = df.max().max()
-    ymin = df.min().min()
-    xmax = df.index.max()
-    xmin = df.index.min()
-
-    ax1 = df.plot(figsize=(14, 6), yticks=[*np.linspace(ymin, ymax, 20)], rot=90, sharey=False,
-                  subplots=False, grid=True, fontsize=8)
-
-    alldays = matplotlib.dates.DayLocator(interval=5)  # 主刻度为每月
-    ax1.xaxis.set_major_locator(alldays)  # 设置主刻度
-    ax1.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y%m%d'))  # 主刻度格式为年月日
-    ax1.xaxis.set_minor_formatter(plt.NullFormatter())  # 取消副刻度
-    ax1.set_xlim(xmin, xmax)  # x轴范围
-    ax1.set_ylim(ymin, ymax)  # y轴范围
-    plt.subplots_adjust(top=0.96, bottom=0.09, right=0.97, left=0.03, hspace=0.02, wspace=0.02)
-    plt.title(title)
-    if show_picture:
-        plt.show()
-    else:
-        f = plt.gcf()  # 获取当前图像
-        path = work_dir + '{}.png'.format(title)
-        f.savefig(path)
-
 
 def com_buy_price(data1, data2):
     if data1['买入价'] != 0 and data2['买入价'] != 0:
@@ -100,12 +58,6 @@ def select_buy_price(data_list):
             data['盈亏金额'] = round((data['卖出价'] - data['买入价']) * data['买入量'])
 
     data_list.sort(key=cmp_to_key(com_buy_price), reverse=True)
-
-
-上交所手续费 = 0.00013
-深交所手续费 = 0.00011
-印花税 = 0.001
-
 
 def count_stock_area_earn_money(data_list, writer):
     ret = 0
@@ -336,7 +288,7 @@ def 运行面积策略(回测模式):
             print("num = ", num, ' 当前最大收益 = ', max_total_earn_money)
 
         if not 回测模式:
-            draw_earn_money(earn_money, '面积策略收益图', False)
+            draw_earn_money(earn_money, work_dir, '面积策略收益图', False)
 
     if not 回测模式:
         fd.close()
