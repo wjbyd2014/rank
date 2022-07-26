@@ -1,6 +1,7 @@
 from config_manager import ConfigManager
 from csv_cache import *
 from strategy_utils import *
+from tinysoft import TinySoft
 
 work_dir = "D:\\ts\\"
 ts = TinySoft(work_dir)
