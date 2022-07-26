@@ -132,7 +132,7 @@ def 运行新面积策略(回测模式):
         writer = csv.DictWriter(fd, fieldnames=field_names)
         writer.writeheader()
 
-    ret_date = ts.get_dates(20220718)
+    ret_date = ts.get_dates(20220726)
     ret_date.reverse()
 
     ts_dates = [date['date'] for date in ret_date]
@@ -163,14 +163,6 @@ def 运行新面积策略(回测模式):
 
                 data_list = list()
                 for data in stock_data:
-                    sell_info = sell_cache.get(data['key'])
-                    if not sell_info:
-                        print("sell price not found, key = ", data['key'])
-                        continue
-
-                    data['卖出价'] = sell_info['卖出价']
-                    data['卖出日期'] = sell_info['卖出日期']
-
                     stock_info = stock_info_cache.get(data['key'])
                     if not stock_info:
                         print("get stock info failed, key = ", data['key'])
@@ -178,6 +170,14 @@ def 运行新面积策略(回测模式):
 
                     for key in stock_info_cache.keys():
                         data[key] = stock_info[key]
+
+                    sell_info = sell_cache.get(data['key'])
+                    if not sell_info:
+                        print("sell price not found, key = ", data['key'])
+                        continue
+
+                    data['卖出价'] = sell_info['卖出价']
+                    data['卖出日期'] = sell_info['卖出日期']
 
                     data_list.append(data)
                 count_buy_amount(data_list)
