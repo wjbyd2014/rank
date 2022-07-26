@@ -107,10 +107,10 @@ def 运行新面积策略(回测模式):
     stock_poll_cache.build_cache()
 
     stock_info_cache = ReadWriteKeyCsvCache('stock_info_cache', work_dir,
-                                             {'上市天数': int, 'ma3向上': int, 'ma5向上': int,
-                                              '上涨起点日': str, '涨板打断次数': int
-                                              }, ts, 'mianji_stock_info.js',
-                                             {}, '新面积策略股票信息.csv')
+                                            {'上市天数': int, 'ma3向上': int, 'ma5向上': int,
+                                             '上涨起点日': str, '涨板打断次数': int
+                                             }, ts, 'mianji_stock_info.js',
+                                            {}, '新面积策略股票信息.csv')
     stock_info_cache.build_cache()
 
     sell_cache = ReadOnlyCsvCache('sell_cache', work_dir,
@@ -131,7 +131,7 @@ def 运行新面积策略(回测模式):
         writer = csv.DictWriter(fd, fieldnames=field_names)
         writer.writeheader()
 
-    ret_date = ts.get_dates(20220718)[:1]
+    ret_date = ts.get_dates(20220718)
     ret_date.reverse()
 
     ts_dates = [date['date'] for date in ret_date]
@@ -234,7 +234,7 @@ def 运行新面积策略(回测模式):
             print("num = ", num, ' 当前最大收益 = ', max_total_earn_money)
 
         if not 回测模式:
-            draw_earn_money(earn_money, work_dir, '面积策略收益图', False)
+            draw_earn_money(earn_money, work_dir, '新面积策略收益图', False)
 
     if not 回测模式:
         fd.close()
