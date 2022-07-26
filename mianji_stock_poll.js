@@ -136,21 +136,15 @@ begin
         from markettable datekey day+time3 to day+time4 of DefaultStockID() end;
     end
     assert(length(data) = 买入区间);
-
+    
     sum_price := 0;
     num_price := 0;
     for i := 0 to 买入区间 - 1 do
     begin
-        if data[i]['close'] <> 今日涨停价 then
-        begin
-            sum_price += data[i]['close'];
-            num_price += 1;
-        end
+        sum_price += data[i]['close'];
+        num_price += 1;
     end
-    if num_price <> 0 then
-        return floatn(sum_price / num_price, 2);
-    else
-        return 0;
+    return floatn(sum_price / num_price, 2);
 end
 
 function 计算交叉点和面积(stock_name, 时间线, 个股分钟线, 大盘分钟线);
