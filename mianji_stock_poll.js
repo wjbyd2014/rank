@@ -116,6 +116,7 @@ Begin
             无涨停板股票列表 &= arr;
     end
 
+    SortTableByField(无涨停板股票列表, '平均面积', 0);
     ret &= 有涨停板股票列表;
     if length(ret) < num then
     begin
