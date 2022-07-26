@@ -70,6 +70,9 @@ class ReadWriteKeyCsvCache:
                 self.cache[row['key']] = data
         return True
 
+    def keys(self):
+        return list(self.fields_dict.keys())
+
     def get(self, key):
         if key in self.cache:
             return self.cache[key]
@@ -138,6 +141,9 @@ class ReadWriteDateCsvCache:
                 self.cache[key] = data
                 self.cache.setdefault(day, list())
                 self.cache[day].append(data)
+
+    def keys(self):
+        return list(self.fields_dict.keys())
 
     def get(self, date, date_str):
         if date in self.cache:
