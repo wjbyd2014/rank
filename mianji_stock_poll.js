@@ -110,7 +110,7 @@ Begin
             '5日涨停板数':涨停板数5, '7日涨停板数':涨停板数7));
 
 
-        if 涨停板数1 > 0 or 涨停板数3 > 0 or 涨停板数5 > 0 or 涨停板数7 then
+        if 涨停板数1 > 0 or 涨停板数3 > 0 or 涨停板数5 > 0 or 涨停板数7 > 0 then
             有涨停板股票列表 &= arr;
         else
             无涨停板股票列表 &= arr;
@@ -136,7 +136,7 @@ begin
         from markettable datekey day+time3 to day+time4 of DefaultStockID() end;
     end
     assert(length(data) = 买入区间);
-    
+
     sum_price := 0;
     num_price := 0;
     for i := 0 to 买入区间 - 1 do
