@@ -90,10 +90,10 @@ def select_stocks(data_list):
 每日资金量 = 6000
 
 cm = ConfigManager(work_dir + '回测.txt')
-cm.add_factor1('涨停板数1打分', 0, 10, 0.5)
-cm.add_factor1('涨停板数3打分', 0, 10, 0.5)
-cm.add_factor1('涨停板数5打分', 0, 10, 0.5)
-cm.add_factor1('涨停板数7打分', 0, 10, 0.5)
+cm.add_factor1('涨停板数1打分', 4.0, 5.0, 0.1)
+cm.add_factor1('涨停板数3打分', 2.0, 2.0, 0.1)
+cm.add_factor1('涨停板数5打分', 0, 0, 0.1)
+cm.add_factor1('涨停板数7打分', 5.0, 6.0, 0.1)
 cm.add_factor1('最小上市天数', 35, 35, 1)
 cm.add_factor1('最小量比', 5.5, 5.5, 0.5)
 cm.add_factor1('每只股票最大购买金额', 1800, 1800, 100)
@@ -200,41 +200,30 @@ def 运行新面积策略(回测模式):
             earn_money[date] = got_money
             total_earn_money += got_money
 
-        '''
         print(
-            '{}/{} '
-            '每日股票池数({}) '
-            '购买时最大跌幅({}) '
-            'ma30打分({}) '
-            '涨停板数1打分({:.1f}) '
+            '{}/{}'
+            '涨停板数1打分({}) '
             '涨停板数3打分({}) '
             '涨停板数5打分({}) '
             '涨停板数7打分({}) '
-            '观察期收盘价涨幅({}) '
             '最小上市天数({}) '
             '最小量比({}) '
             '每只股票最大购买金额({}) '
             '每只股票最小购买金额({}) '
-            '买入比({}) 最大开板数量({}) 开板最大回撤({}) 最大收益({})'.format(
+            '买入比({}) '
+            '最大收益({})'.format(
                 num, len_list_factors,
-                cm.get_config_value('每日股票池数'),
-                cm.get_config_value('购买时最大跌幅'),
-                cm.get_config_value('ma30打分'),
                 cm.get_config_value('涨停板数1打分'),
                 cm.get_config_value('涨停板数3打分'),
                 cm.get_config_value('涨停板数5打分'),
                 cm.get_config_value('涨停板数7打分'),
-                cm.get_config_value('观察期收盘价涨幅'),
                 cm.get_config_value('最小上市天数'),
                 cm.get_config_value('最小量比'),
                 cm.get_config_value('每只股票最大购买金额'),
                 cm.get_config_value('每只股票最小购买金额'),
                 cm.get_config_value('买入比'),
-                cm.get_config_value('最大开板数量'),
-                cm.get_config_value('开板最大回撤'),
                 max_total_earn_money)
         )
-        '''
 
         if total_earn_money >= max_total_earn_money:
             max_total_earn_money = total_earn_money
@@ -254,4 +243,4 @@ def 运行新面积策略(回测模式):
 
 
 if __name__ == '__main__':
-    运行新面积策略(False)
+    运行新面积策略(True)
