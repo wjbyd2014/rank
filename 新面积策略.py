@@ -78,16 +78,22 @@ def select_stocks(data_list):
         if data['7日涨停板数'] > 0:
             data['打分'] += cm.get_config_value('涨停板数7打分') * (data['7日涨停板数'] - data['5日涨停板数'])
 
+        if data['观察期结束是否涨停'] == 1:
+            data['打分'] = 0
+
+        if data['买入量'] == 0:
+            data['打分'] = 0
+
     data_list.sort(key=lambda x: x['打分'], reverse=True)
 
 
 每日资金量 = 6000
 
 cm = ConfigManager(work_dir + '回测.txt')
-cm.add_factor1('涨停板数1打分', 0, 0, 0.5)
-cm.add_factor1('涨停板数3打分', 0, 0, 0.5)
-cm.add_factor1('涨停板数5打分', 0, 0, 0.5)
-cm.add_factor1('涨停板数7打分', 0, 0, 0.5)
+cm.add_factor1('涨停板数1打分', 0, 10, 0.5)
+cm.add_factor1('涨停板数3打分', 0, 10, 0.5)
+cm.add_factor1('涨停板数5打分', 0, 10, 0.5)
+cm.add_factor1('涨停板数7打分', 0, 10, 0.5)
 cm.add_factor1('最小上市天数', 35, 35, 1)
 cm.add_factor1('最小量比', 5.5, 5.5, 0.5)
 cm.add_factor1('每只股票最大购买金额', 1800, 1800, 100)
