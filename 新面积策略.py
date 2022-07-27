@@ -57,7 +57,7 @@ def count_stock_area_earn_money(data_list, writer, 回测模式):
             if 回测模式:
                 break
 
-        if 回测模式:
+        if not 回测模式:
             data['买入价'] = round(data['买入价'], 3)
             data['实际买入金额'] = round(data['实际买入金额'])
             data['实际盈亏金额'] = round(data['实际盈亏金额'])
@@ -84,10 +84,10 @@ def select_stocks(data_list):
 每日资金量 = 6000
 
 cm = ConfigManager(work_dir + '回测.txt')
-cm.add_factor1('涨停板数1打分', 8, 8, 0.5)
-cm.add_factor1('涨停板数3打分', 4, 4, 0.5)
-cm.add_factor1('涨停板数5打分', 2, 2, 0.5)
-cm.add_factor1('涨停板数7打分', 1, 1, 0.5)
+cm.add_factor1('涨停板数1打分', 0, 0, 0.5)
+cm.add_factor1('涨停板数3打分', 0, 0, 0.5)
+cm.add_factor1('涨停板数5打分', 0, 0, 0.5)
+cm.add_factor1('涨停板数7打分', 0, 0, 0.5)
 cm.add_factor1('最小上市天数', 35, 35, 1)
 cm.add_factor1('最小量比', 5.5, 5.5, 0.5)
 cm.add_factor1('每只股票最大购买金额', 1800, 1800, 100)
@@ -102,7 +102,7 @@ def 运行新面积策略(回测模式):
 
     stock_poll_cache = ReadWriteDateCsvCache('stock_poll_cache', work_dir,
                                              {'日期': str, '代码': str, '名称': str, '量比': float,
-                                              '买入量': float, '买入价': float,
+                                              '买入量': float, '买入价': float, '观察期结束是否涨停': int,
                                               '交叉点': str, '总面积': float, '平均面积': float,
                                               '1日涨停板数': int, '3日涨停板数': int, '5日涨停板数': int, '7日涨停板数': int
                                               }, ts, 'mianji_stock_poll.js',
@@ -136,7 +136,7 @@ def 运行新面积策略(回测模式):
         writer = csv.DictWriter(fd, fieldnames=field_names)
         writer.writeheader()
 
-    ret_date = ts.get_dates(20220718)
+    ret_date = ts.get_dates(20220727)
     ret_date.reverse()
 
     ts_dates = [date['date'] for date in ret_date]
