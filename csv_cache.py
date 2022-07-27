@@ -174,7 +174,7 @@ class ReadWriteDateCsvCache:
         if self.fd:
             self.fd.close()
 
-
+'''
 if __name__ == '__main__':
     work_dir = 'D:\\ts\\'
     sell_cache = ReadOnlyCsvCache('sell_cache', work_dir,
@@ -218,3 +218,4 @@ if __name__ == '__main__':
     print(len(v1))
     v2 = area_cache.get(20220715, '2022-07-15')
     print(len(v2))
+'''
