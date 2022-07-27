@@ -92,7 +92,7 @@ class ReadWriteKeyCsvCache:
         if not self.fd:
             new_file = not os.path.exists(self.csv_file_name)
             self.fd = open(self.csv_file_name, mode='a', newline='')
-            self.writer = csv.DictWriter(self.fd, fieldnames=['key'] + list(self.fields_dict.keys()))
+            self.writer = csv.DictWriter(self.fd, fieldnames=['key'] + self.keys())
             if new_file:
                 self.writer.writeheader()
 
@@ -159,7 +159,7 @@ class ReadWriteDateCsvCache:
             if not self.fd:
                 new_file = not os.path.exists(self.csv_file_name)
                 self.fd = open(self.csv_file_name, mode='a', newline='')
-                self.writer = csv.DictWriter(self.fd, fieldnames=['key'] + list(self.fields_dict.keys()))
+                self.writer = csv.DictWriter(self.fd, fieldnames=['key'] + self.keys())
                 if new_file:
                     self.writer.writeheader()
 
@@ -175,7 +175,6 @@ class ReadWriteDateCsvCache:
             self.fd.close()
 
 
-'''
 if __name__ == '__main__':
     work_dir = 'D:\\ts\\'
     sell_cache = ReadOnlyCsvCache('sell_cache', work_dir,
@@ -219,4 +218,3 @@ if __name__ == '__main__':
     print(len(v1))
     v2 = area_cache.get(20220715, '2022-07-15')
     print(len(v2))
-'''
