@@ -17,7 +17,7 @@ class ConfigManager:
         ret = list()
         value = min_value
         while value <= max_value:
-            ret.append(value)
+            ret.append(round(value, 2))
             value += interval
         return ret
 
