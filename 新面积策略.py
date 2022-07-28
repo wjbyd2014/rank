@@ -84,21 +84,32 @@ def select_stocks(data_list):
         if data['买入量'] == 0:
             data['打分'] = 0
 
+        if data['量比'] < cm.get_config_value('最小量比'):
+            data['打分'] = 0
+
+        if data['开板次数'] > cm.get_config_value('最大开板次数'):
+            data['打分'] = 0
+
+        if data['开板最大回撤'] > cm.get_config_value('最大开板最大回撤'):
+            data['打分'] = 0
+
     data_list.sort(key=lambda x: x['打分'], reverse=True)
 
 
 每日资金量 = 6000
 
 cm = ConfigManager(work_dir + '回测.txt')
-cm.add_factor1('涨停板数1打分', 4.0, 5.0, 0.1)
+cm.add_factor1('涨停板数1打分', 4.5, 4.5, 0.1)
 cm.add_factor1('涨停板数3打分', 2.0, 2.0, 0.1)
 cm.add_factor1('涨停板数5打分', 0, 0, 0.1)
-cm.add_factor1('涨停板数7打分', 5.0, 6.0, 0.1)
-cm.add_factor1('最小上市天数', 35, 35, 1)
-cm.add_factor1('最小量比', 5.5, 5.5, 0.5)
+cm.add_factor1('涨停板数7打分', 5.7, 5.7, 0.1)
+cm.add_factor1('最小上市天数', 1, 1, 1)
+cm.add_factor1('最小量比', 0.3, 0.3, 0.1)
 cm.add_factor1('每只股票最大购买金额', 1800, 1800, 100)
 cm.add_factor1('每只股票最小购买金额', 100, 100, 10)
 cm.add_factor1('买入比', 100, 100, 1)
+cm.add_factor1('最大开板次数', 0, 10, 1)
+cm.add_factor1('最大开板最大回撤', 0.5, 20, 0.5)
 
 
 def 运行新面积策略(回测模式):
@@ -110,7 +121,8 @@ def 运行新面积策略(回测模式):
                                              {'日期': str, '代码': str, '名称': str, '量比': float,
                                               '买入量': float, '买入价': float, '观察期结束是否涨停': int,
                                               '交叉点': str, '总面积': float, '平均面积': float,
-                                              '1日涨停板数': int, '3日涨停板数': int, '5日涨停板数': int, '7日涨停板数': int
+                                              '1日涨停板数': int, '3日涨停板数': int, '5日涨停板数': int, '7日涨停板数': int,
+                                              '开板次数': int, '开板最大回撤': float
                                               }, ts, 'mianji_stock_poll.js',
                                              {'time1': '09:33:00', 'time2': '09:53:00',
                                               'time3': '09:54:00', 'time4': '09:58:00', 'num': 800},
@@ -206,30 +218,7 @@ def 运行新面积策略(回测模式):
             best_factors = factors
             cm.log(max_total_earn_money)
 
-        """print(
-            '{}/{}'
-            '涨停板数1打分({}) '
-            '涨停板数3打分({}) '
-            '涨停板数5打分({}) '
-            '涨停板数7打分({}) '
-            '最小上市天数({}) '
-            '最小量比({}) '
-            '每只股票最大购买金额({}) '
-            '每只股票最小购买金额({}) '
-            '买入比({}) '
-            '最大收益({})'.format(
-                num, len_list_factors,
-                cm.get_config_value('涨停板数1打分'),
-                cm.get_config_value('涨停板数3打分'),
-                cm.get_config_value('涨停板数5打分'),
-                cm.get_config_value('涨停板数7打分'),
-                cm.get_config_value('最小上市天数'),
-                cm.get_config_value('最小量比'),
-                cm.get_config_value('每只股票最大购买金额'),
-                cm.get_config_value('每只股票最小购买金额'),
-                cm.get_config_value('买入比'),
-                max_total_earn_money)
-        )"""
+        #cm.print(num, len_list_factors, max_total_earn_money)
 
         if num % 100 == 0:
             print("num = ", num, ' 当前最大收益 = ', max_total_earn_money)
