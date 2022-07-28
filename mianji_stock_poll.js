@@ -107,12 +107,16 @@ Begin
 
         买入价 := 计算买入价(stock_name, stock_code, day, 今日涨停价, time3, time4);
 
+        开板 := 计算开板(stock_name, stock_code, day, 今日涨停价, 昨日收盘价, data);
+        开板次数 := 开板[0];
+        开板最大回撤 := 开板[1];
+
         arr := array(('名称':stock_name, '代码':stock_code, '量比':量比,
             '买入量':买入量, '买入价':买入价, '观察期结束是否涨停': 观察期结束是否涨停,
             '交叉点':交叉点, '总面积':总面积, '平均面积':平均面积,
             '1日涨停板数': 涨停板数1, '3日涨停板数':涨停板数3,
-            '5日涨停板数':涨停板数5, '7日涨停板数':涨停板数7));
-
+            '5日涨停板数':涨停板数5, '7日涨停板数':涨停板数7,
+            '开板次数':开板次数, '开板最大回撤':开板最大回撤));
 
         if 涨停板数1 > 0 or 涨停板数3 > 0 or 涨停板数5 > 0 or 涨停板数7 > 0 then
             有涨停板股票列表 &= arr;
@@ -128,6 +132,32 @@ Begin
     end
     return exportjsonstring(ret);
 End;
+
+function 计算开板(stock_name, stock_code, day, 今日涨停价, 昨日收盘价, data);
+begin
+    开板次数 := 0;
+    开板后最低价 := 今日涨停价;
+    for idx := 1 to length(data) - 1 do
+    begin
+        if data[idx]['close'] < data[idx-1]['close'] then
+        begin
+            if data[idx-1]['close'] = 今日涨停价 then
+                开板次数 += 1;
+        end
+
+        if 开板次数 > 0 and data[idx]['close'] < 开板后最低价 then
+            开板后最低价 := data[idx]['close'];
+    end
+
+    if 开板次数 = 0 then
+        return array(0, 0);
+    else
+    begin
+        ratio1 := count_ratio(今日涨停价, 昨日收盘价);
+        ratio2 := count_ratio(开板后最低价, 昨日收盘价);
+        return array(开板次数, floatn(ratio1 - ratio2, 2));
+    end
+end
 
 function 计算买入价(stock_name, stock_code, day, 今日涨停价, time3, time4);
 begin
