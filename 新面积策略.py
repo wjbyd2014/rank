@@ -80,6 +80,9 @@ def select_stocks(data_list):
         if data['7日涨停板数'] > 0:
             data['打分'] += cm.get_config_value('涨停板数7打分') * (data['7日涨停板数'] - data['5日涨停板数'])
 
+        data['打分'] += cm.get_config_value('最低点系数') * data['最低点']
+        data['打分'] += cm.get_config_value('最高点系数') * data['最高点']
+
         if data['观察期结束是否涨停'] == 1:
             data['打分'] = 0
             continue
@@ -100,12 +103,13 @@ def select_stocks(data_list):
             data['打分'] = 0
             continue
 
-        if data['最高点'] < cm.get_config_value('最小最高点'):
+        if data['上市天数'] < cm.get_config_value('最小上市天数'):
             data['打分'] = 0
             continue
 
-        if data['最低点'] < cm.get_config_value('最小最低点'):
+        if data['涨板打断次数'] > cm.get_config_value('最大断板次数'):
             data['打分'] = 0
+            continue
 
     data_list.sort(key=lambda x: x['打分'], reverse=True)
 
@@ -113,19 +117,20 @@ def select_stocks(data_list):
 每日资金量 = 6000
 
 cm = ConfigManager(work_dir + '回测.txt')
-cm.add_factor1('涨停板数1打分', 4.5, 4.5, 0.1)
-cm.add_factor1('涨停板数3打分', 2.0, 2.0, 0.1)
-cm.add_factor1('涨停板数5打分', 1.3, 1.3, 0.1)
-cm.add_factor1('涨停板数7打分', 6.0, 6.0, 0.1)
-cm.add_factor1('最小上市天数', 1, 1, 1)
+cm.add_factor1('涨停板数1打分', 3.7, 3.7, 0.1)
+cm.add_factor1('涨停板数3打分', 1.6, 1.6, 0.1)
+cm.add_factor1('涨停板数5打分', 1.4, 1.4, 0.1)
+cm.add_factor1('涨停板数7打分', 5.8, 5.8, 0.1)
+cm.add_factor1('最小上市天数', 200, 200, 1)
 cm.add_factor1('最小量比', 0.3, 0.3, 0.1)
-cm.add_factor1('每只股票最大购买金额', 1800, 1800, 100)  # 越高收益越大，但风险也高，实际不好操作，5000左右收益达到峰值
+cm.add_factor1('每只股票最大购买金额', 1800, 1800, 100)
 cm.add_factor1('每只股票最小购买金额', 100, 100, 10)
 cm.add_factor1('买入比', 100, 100, 1)
 cm.add_factor1('最大开板次数', 4, 4, 1)
-cm.add_factor1('最大开板最大回撤', 12.7, 12.7, 0.1)
-cm.add_factor1('最小最高点', 10, 10, 0.1)
-cm.add_factor1('最小最低点', 6.2, 6.2, 0.1)
+cm.add_factor1('最大开板最大回撤', 14.0, 14.0, 0.1)
+cm.add_factor1('最高点系数', 0.59, 0.59, 0.01)
+cm.add_factor1('最低点系数', 0.44, 0.44, 0.01)
+cm.add_factor1('最大断板次数', 2, 2, 1)
 
 
 def 运行新面积策略(回测模式):
@@ -179,6 +184,7 @@ def 运行新面积策略(回测模式):
         date_key[date['date']] = date['datestr']
 
     max_earn_money_ratio = 0
+    max_earn_money = 0
     best_factors = None
     date_to_stock_data = dict()
 
@@ -234,12 +240,13 @@ def 运行新面积策略(回测模式):
             total_use_money += use_money
 
         earn_money_ratio = total_earn_money * 10000 / total_use_money
-        if earn_money_ratio >= max_earn_money_ratio:
+        if earn_money_ratio > max_earn_money_ratio:
+            max_earn_money = total_earn_money
             max_earn_money_ratio = earn_money_ratio
             best_factors = factors
             cm.log(max_earn_money_ratio)
 
-        cm.print(num, len_list_factors, max_earn_money_ratio)
+        # cm.print(num, len_list_factors, max_earn_money_ratio)
 
         if num % 100 == 0:
             print("num = ", num, ' 当前最大收益 = ', max_earn_money_ratio)
@@ -249,9 +256,11 @@ def 运行新面积策略(回测模式):
 
     if not 回测模式:
         fd.close()
+
     print('best_factors = ', best_factors)
     print('max_earn_money_ratio = ', round(max_earn_money_ratio))
+    print('max_earn_money = ', max_earn_money)
 
 
 if __name__ == '__main__':
-    运行新面积策略(False)
+    运行新面积策略(True)
