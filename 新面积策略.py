@@ -193,8 +193,9 @@ def 运行新面积策略(回测模式):
                 count_buy_amount(data_list)
                 date_to_stock_data[date] = data_list
 
-            select_stocks(date_to_stock_data[date])
-            got_money, left_money = count_stock_area_earn_money(date_to_stock_data[date], writer, 回测模式)
+            data_list_copy = date_to_stock_data[date].copy()
+            select_stocks(data_list_copy)
+            got_money, left_money = count_stock_area_earn_money(data_list_copy, writer, 回测模式)
             if left_money > 0:
                 print("%s left %d\n" % (date, left_money))
             earn_money[date] = got_money
