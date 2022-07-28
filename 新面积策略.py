@@ -201,7 +201,12 @@ def 运行新面积策略(回测模式):
             earn_money[date] = got_money
             total_earn_money += got_money
 
-        print(
+        if total_earn_money >= max_total_earn_money:
+            max_total_earn_money = total_earn_money
+            best_factors = factors
+            cm.log(max_total_earn_money)
+
+        """print(
             '{}/{}'
             '涨停板数1打分({}) '
             '涨停板数3打分({}) '
@@ -224,12 +229,7 @@ def 运行新面积策略(回测模式):
                 cm.get_config_value('每只股票最小购买金额'),
                 cm.get_config_value('买入比'),
                 max_total_earn_money)
-        )
-
-        if total_earn_money >= max_total_earn_money:
-            max_total_earn_money = total_earn_money
-            best_factors = factors
-            cm.log(max_total_earn_money)
+        )"""
 
         if num % 100 == 0:
             print("num = ", num, ' 当前最大收益 = ', max_total_earn_money)
