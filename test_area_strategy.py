@@ -73,14 +73,14 @@ if __name__ == '__main__':
                                   '交叉点': str, '总面积': float, '平均面积': float,
                                   '1日涨停板数': int, '3日涨停板数': int, '5日涨停板数': int, '7日涨停板数': int,
                                   '开板次数': int, '开板最大回撤': float, '最高点': float, '最低点': float,
-                                  '开盘价涨幅': float, '昨日是否一字板': int
                                   },
                                  'mianji_stock_poll.js',
                                  {'time1': '09:33:00', 'time2': '09:53:00',
                                   'time3': '09:54:00', 'time4': '09:58:00', 'num': 800},
                                  '新面积策略股票信息.csv',
                                  {'上市天数': int, 'ma3向上': int, 'ma5向上': int,
-                                  '上涨起点日': str, '涨板打断次数': int
+                                  '上涨起点日': str, '涨板打断次数': int,
+                                  '开盘价涨幅': float, '昨日是否一字板': int
                                   },
                                  'mianji_stock_info.js',
                                  {})
