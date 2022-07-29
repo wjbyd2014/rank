@@ -16,20 +16,24 @@ begin
         今日涨停价 := StockZtClose(day);
         上市天数 := StockGoMarketDays();
 
+        今日开盘价 := open();
+        开盘价涨幅 := count_ratio(今日开盘价, 昨日收盘价);
+        昨日是否一字板 := stockiszt2(StockEndTPrevNDay(day, 1));
+
         昨日3日均线 := ref(ma(close(), 3), 1);
         前日3日均线 := ref(ma(close(), 3), 2);
         if 昨日3日均线 > 前日3日均线 then
             ma3向上 := 1;
         else
             ma3向上 := 0;
-            
+
         昨日5日均线 := ref(ma(close(), 5), 1);
         前日5日均线 := ref(ma(close(), 5), 2);
         if 昨日5日均线 > 前日5日均线 then
             ma5向上 := 1;
         else
             ma5向上 := 0;
-            
+
         上涨起点 := 寻找上涨起点(stock_name, stock_code, day, 上市天数, 3, 3);
         if 上涨起点 = 0 then
         begin
@@ -43,7 +47,7 @@ begin
         end
     end
     return array(('上市天数':上市天数, 'ma3向上':ma3向上, 'ma5向上':ma5向上,
-        '上涨起点日':上涨起点日, '涨板打断次数':涨板打断次数));
+        '上涨起点日':上涨起点日, '涨板打断次数':涨板打断次数, '开盘价涨幅':开盘价涨幅, '昨日是否一字板':昨日是否一字板));
 end
 
 function 创n日新高(stock_name, stock_code, day, 回溯天数, 创几日新高);
@@ -74,17 +78,16 @@ end
 function 寻找上涨起点(stock_name, stock_code, day, 上市天数, 几日内, 创几日新高);
 begin
     上市日 := StockFirstDay(stock_code);
-    
+
     回溯天数 := 1; // 回溯多少天
     while True do
     begin
         日期1 := DateToStr(StockEndTPrevNDay(day, 回溯天数)); // 回溯日
         回溯日 := StockEndTPrevNDay(day, 回溯天数);
-        
+
         if 回溯日 = 上市日 then
         begin
-            回溯天数 += 1;
-            break;
+            return 回溯天数;
         end
 
         if 几日内创过几日新高(stock_name, stock_code, day, 回溯天数, 几日内, 创几日新高) then
@@ -97,9 +100,6 @@ end
 
 function 上涨期间涨停板打算次数(stock_name, stock_code, day, num);
 begin
-    //echo 'begin = ', DateToStr(StockEndTPrevNDay(day, 1));
-    //echo 'end = ', DateToStr(StockEndTPrevNDay(day, num));
-    
     ret := 0;
     last_day_is_zt := 0;
     for i := num downto 1 do
@@ -113,11 +113,15 @@ begin
             if last_day_is_zt = 1 then
             begin
                 ret += 1;
-                //echo '涨板打断 ', DateToStr(StockEndTPrevNDay(day, i));
             end
-                
+
             last_day_is_zt := 0;
         end
     end
     return ret;
+end
+
+function count_ratio(value1, value2);
+begin
+    return floatn((value1 / value2 - 1) * 100, 3);
 end
