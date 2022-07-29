@@ -58,12 +58,15 @@ class AreaStrategy(Strategy):
 
         data_list_copy.sort(key=lambda x: x['打分'], reverse=True)
 
+        for idx, data in enumerate(data_list_copy):
+            data['当日排名'] = idx + 1
+
 
 if __name__ == '__main__':
     area_strategy = AreaStrategy('area_strategy_test',
                                  'D:\\ts\\',
                                  'area_strategy_test.csv',
-                                 ['打分'],
+                                 ['打分', '当日排名'],
                                  '新面积策略股票池.csv',
                                  {'日期': str, '代码': str, '名称': str, '量比': float,
                                   '买入量': float, '买入价': float, '观察期结束是否涨停': int,
