@@ -124,7 +124,7 @@ class Strategy:
                 print("num = ", num, ' 当前最大收益 = ', max_earn_money_ratio)
 
             if do_print2:
-                self.cm.print(num, len_list_factors, max_earn_money_ratio)
+                self.cm.print(num, len_list_factors, total_earn_money, earn_money_ratio)
 
             if do_collect_earn_money:
                 self.earn_money_list.append(earn_money)
