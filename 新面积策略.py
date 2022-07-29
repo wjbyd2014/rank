@@ -259,7 +259,7 @@ def 运行新面积策略(回测模式):
             earn_money3 = dict()
             for date, money in earn_money.items():
                 earn_money3[date] = 1.2 * money
-            draw_list_earn_money([earn_money, earn_money2, earn_money3], work_dir, '新面积策略收益图', False)"""
+            draw_list_earn_money([earn_money, earn_money2, earn_money3], ['1','2','3'], work_dir, '新面积策略收益图', False)"""
 
     if not 回测模式:
         fd.close()
