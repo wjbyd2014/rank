@@ -60,11 +60,11 @@ class ConfigManager:
             self.log_fd.write(log_str)
             self.log_fd.flush()
 
-    def print(self, num, len_list_factors, max_total_earn_money):
+    def print(self, num, len_list_factors, total_earn_money, earn_money_ratio):
         log_str = f'{num}/{len_list_factors} '
         for config_name in self.config_values:
             log_str += config_name + '=' + str(self.config_values[config_name]) + ' '
-        log_str += f'最大收益 = {max_total_earn_money}'
+        log_str += f'实际收益 = {total_earn_money} 收益率 = {earn_money_ratio}'
         print(log_str)
 
     def __del__(self):
