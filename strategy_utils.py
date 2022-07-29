@@ -44,7 +44,9 @@ def draw_earn_money(day_earn_money, work_dir, title, show_picture):
         f.savefig(path)
 
 
-def draw_list_earn_money(list_day_earn_money, work_dir, title, show_picture):
+def draw_list_earn_money(list_day_earn_money, legends, work_dir, title, show_picture):
+    assert(len(list_day_earn_money) == len(legends))
+
     ymax = ymin = None
     xmax = xmin = None
 
@@ -75,8 +77,10 @@ def draw_list_earn_money(list_day_earn_money, work_dir, title, show_picture):
     fig, ax = plt.subplots(figsize=(14, 7))
     d_keys = list(list_d[0].keys())
     d_values = [d.values() for d in list_d]
+    idx = 0
     for values in d_values:
-        ax.plot(d_keys, values)
+        ax.plot(d_keys, values, label=legends[idx])
+        idx += 1
 
     alldays = matplotlib.dates.DayLocator(interval=5)  # 主刻度为每月
     ax.xaxis.set_major_locator(alldays)  # 设置主刻度
@@ -90,6 +94,7 @@ def draw_list_earn_money(list_day_earn_money, work_dir, title, show_picture):
     plt.grid()
     plt.xticks(fontsize=8, rotation=90)
     plt.yticks(fontsize=8)
+    ax.legend()
 
     if show_picture:
         plt.show()
