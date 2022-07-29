@@ -138,7 +138,6 @@ class ReadWriteDateCsvCache:
                 data = {'key': key}
                 for field_name, filed_converter in self.fields_dict.items():
                     data[field_name] = filed_converter(row[field_name])
-                self.cache[key] = data
                 self.cache.setdefault(day, list())
                 self.cache[day].append(data)
 
