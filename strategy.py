@@ -49,6 +49,7 @@ class Strategy:
         self.earn_money_list = list()
         self.max_use_money_per_day = 6000
         self.max_use_money_per_stock = 1800
+        self.buy_vol_ratio = 100
 
     def __del__(self):
         if self.fd:
@@ -63,7 +64,7 @@ class Strategy:
             self.stock_info_cache.build_cache()
 
     def run_in_normal_mode(self):
-        assert (self.cm.len_factors() == 1)
+        assert(self.cm.len_factors() == 1)
         if not self.__prepare():
             return
 
@@ -193,7 +194,7 @@ class Strategy:
 
             if data['买入价'] > 0 and data['买入量'] > 0:
                 data['可买金额'] = round(data['买入价'] * data['买入量'])
-                data['计划买入金额'] = data['可买金额'] * (self.cm.get_config_value('买入比') / 100)
+                data['计划买入金额'] = data['可买金额'] * self.buy_vol_ratio / 100
 
                 if data['计划买入金额'] > use_money_per_stock:
                     data['计划买入金额'] = use_money_per_stock
