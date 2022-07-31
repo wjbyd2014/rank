@@ -5,8 +5,10 @@ class ConfigManager:
         self.log_fd = open(log_path, 'w')
 
     def add_factor1(self, name, min_value, max_value, interval):
-        self.list_factors.append(self.分箱(min_value, max_value, interval))
+        factors = self.分箱(min_value, max_value, interval)
+        self.list_factors.append(factors)
         self.config_values[name] = None
+        return factors
 
     def add_factor2(self, name, factors):
         self.list_factors.append(factors)
