@@ -234,7 +234,7 @@ class Strategy:
         draw_earn_money(self.earn_money_list[0], self.work_dir, self.name + '收益图', False)
 
     def __draw_picture2(self, list_legends):
-        draw_list_earn_money(self.earn_money_list, list_legends, self.work_dir, self.name + '收益图', False)
+        draw_list_earn_money(self.earn_money_list, list_legends, self.work_dir, self.name + '收益图', True)
 
     @abstractmethod
     def select_stocks(self, data_list_copy):
