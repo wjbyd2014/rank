@@ -8,7 +8,8 @@ from strategy_utils import *
 class Strategy:
     def __init__(self, name, work_dir, csv_file_name, csv_field_names,
                  stock_pool_file_name, stock_pool_fields, stock_pool_js_file_name, stock_pool_js_params,
-                 stock_info_file_name, stock_info_fields, stock_info_js_file_name, stock_info_js_params):
+                 stock_info_file_name, stock_info_fields, stock_info_js_file_name, stock_info_js_params,
+                 priority_fields, skipped_csv_fields):
         self.name = name
         self.ts = TinySoft(work_dir)
         self.sell_cache = ReadOnlyCsvCache('sell_cache', work_dir,
@@ -37,6 +38,15 @@ class Strategy:
                                                    '盈亏金额', '盈亏比', '计划买入金额', '实际买入金额',
                                                    '实际盈亏金额']
 
+        list_fileds = self.csv_field_names.copy()
+        self.csv_field_names = ['key'] + priority_fields
+        for field in list_fileds:
+            if field in self.csv_field_names or field in skipped_csv_fields:
+                continue
+            self.csv_field_names.append(field)
+
+        self.skipped_csv_fields = skipped_csv_fields
+
         self.work_dir = work_dir
         self.csv_file_name = csv_file_name
         self.ts_dates = None
@@ -64,19 +74,19 @@ class Strategy:
             self.stock_info_cache.build_cache()
 
     def run_in_normal_mode(self):
-        assert(self.cm.len_factors() == 1)
+        assert (self.cm.len_factors() == 1)
         if not self.__prepare():
             return
 
         self.__run(False, False, True, False, True)
         self.__draw_picture1()
 
-    def run_in_linspace_compare_mode(self, list_legneds):
+    def run_in_linspace_compare_mode(self, list_legends):
         if not self.__prepare():
             return
 
         self.__run(False, False, True, False, False)
-        self.__draw_picture2(list_legneds)
+        self.__draw_picture2(list_legends)
 
     def run_in_linspace_count_mode(self, do_print=False):
         if not self.__prepare():
@@ -209,16 +219,22 @@ class Strategy:
             self.writer.writeheader()
 
         for data in data_list_copy:
+            for key in self.skipped_csv_fields:
+                data.pop(key)
+
             data['买入价'] = round(data['买入价'], 3)
-            data['实际买入金额'] = round(data['实际买入金额'])
-            data['实际盈亏金额'] = round(data['实际盈亏金额'])
+            data['可买金额'] = round(data['可买金额'] / 10000, 2)
+            data['盈亏金额'] = round(data['盈亏金额'] / 10000, 2)
+            data['计划买入金额'] = round(data['计划买入金额'] / 10000, 2)
+            data['实际买入金额'] = round(data['实际买入金额'] / 10000, 2)
+            data['实际盈亏金额'] = round(data['实际盈亏金额'] / 10000, 2)
             self.writer.writerow(data)
 
     def __draw_picture1(self):
         draw_earn_money(self.earn_money_list[0], self.work_dir, self.name + '收益图', False)
 
-    def __draw_picture2(self, list_legneds):
-        draw_list_earn_money(self.earn_money_list, list_legneds, self.work_dir, self.name + '收益图', False)
+    def __draw_picture2(self, list_legends):
+        draw_list_earn_money(self.earn_money_list, list_legends, self.work_dir, self.name + '收益图', False)
 
     @abstractmethod
     def select_stocks(self, data_list_copy):
@@ -231,7 +247,7 @@ class Strategy:
         min_use_money_per_stock = self.cm.get_config_value('每只股票最小购买金额') * 10000
 
         for data in data_list_copy:
-            if left_money > 0:
+            if left_money > 0 and data['打分'] > 0:
                 if data['计划买入金额'] > left_money:
                     data['实际买入金额'] = left_money
                 else:
