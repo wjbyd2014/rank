@@ -78,7 +78,7 @@ class Strategy:
         if not self.__prepare():
             return
 
-        self.__run(False, False, True, False, True)
+        self.__run(False, False, True, True, True)
         self.__draw_picture1()
 
     def run_in_linspace_compare_mode(self, list_legends):
@@ -92,9 +92,9 @@ class Strategy:
         if not self.__prepare():
             return
 
-        self.__run(do_print, True, False, True, False)
+        self.__run(do_print, True, False, False, False)
 
-    def __run(self, do_print1, do_print2, do_collect_earn_money, in_line_space_count_mode, write_csv):
+    def __run(self, do_print1, do_print2, do_collect_earn_money, count_all, write_csv):
         max_earn_money_ratio = 0
         max_earn_money = 0
         best_factors = None
@@ -111,7 +111,7 @@ class Strategy:
                 data_list_copy = self.date_to_stock_data[date].copy()
                 self.select_stocks(data_list_copy)
                 got_money, use_money, left_money = \
-                    self.count_stock_area_earn_money(data_list_copy, in_line_space_count_mode)
+                    self.count_stock_area_earn_money(data_list_copy, count_all)
 
                 if left_money > 0:
                     print(f"{date} left {left_money}\n")
@@ -189,7 +189,7 @@ class Strategy:
             self.date_key[date['date']] = date['datestr']
 
     def add_factor1(self, name, min_value, max_value, interval):
-        self.cm.add_factor1(name, min_value, max_value, interval)
+        return self.cm.add_factor1(name, min_value, max_value, interval)
 
     def add_factor2(self, name, factors):
         self.cm.add_factor2(name, factors)
@@ -240,7 +240,7 @@ class Strategy:
     def select_stocks(self, data_list_copy):
         pass
 
-    def count_stock_area_earn_money(self, data_list_copy, line_space_count_mode):
+    def count_stock_area_earn_money(self, data_list_copy, count_all):
         ret = 0
         use_money = 0
         left_money = self.max_use_money_per_day * 10000
@@ -268,6 +268,6 @@ class Strategy:
                     left_money = 0
             else:
                 data['实际买入金额'] = data['实际盈亏金额'] = 0
-                if line_space_count_mode:
+                if not count_all:
                     break
         return ret, use_money, left_money
