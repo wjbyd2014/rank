@@ -14,7 +14,7 @@ begin
     begin
         昨日收盘价 := ref(close(), 1);
         今日涨停价 := StockZtClose(day);
-        上市天数 := StockGoMarketDays();
+        上市天数 := 计算自定义上市天数(stock_code);
 
         今日开盘价 := open();
         开盘价涨幅 := count_ratio(今日开盘价, 昨日收盘价);
@@ -48,6 +48,22 @@ begin
     end
     return array(('上市天数':上市天数, 'ma3向上':ma3向上, 'ma5向上':ma5向上,
         '上涨起点日':上涨起点日, '涨板打断次数':涨板打断次数, '开盘价涨幅':开盘价涨幅, '昨日是否一字板':昨日是否一字板));
+end
+
+function 计算自定义上市天数(stock_code);
+begin
+    上市天数 := StockGoMarketDays();
+    上市日 := FundGoMarketDate();
+    num := 1;
+    while true do
+    begin
+        下一日 := StockEndTPrevNDay(IntToDate(上市日), -num);
+        if stockiszt2(下一日) then
+            num += 1;
+        else
+            break;
+    end
+    return 上市天数 - num;
 end
 
 function 创n日新高(stock_name, stock_code, day, 回溯天数, 创几日新高);
