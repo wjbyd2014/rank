@@ -33,13 +33,13 @@ Begin
         if not is_trade_day(day, stock_code) then
             continue;
 
-
         // 计算昨日收盘价
         with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
         begin
             昨日收盘价 := ref(close(), 1);
             今日涨停价 := StockZtClose(day);
             前N日平均成交量 := ref(ma(vol(), 100), 1);
+            上市日 := FundGoMarketDate();
         end
 
         if 昨日收盘价 = 0 or 今日涨停价 = 0 then
@@ -63,24 +63,6 @@ Begin
         for idx in 个股分钟线 do
         begin
             个股分钟线[idx] := count_ratio(个股分钟线[idx], 昨日收盘价);
-        end
-
-        // 计算买入量
-        data_vol := select ['vol'] from data where ['close'] <> 今日涨停价 end;
-        if length(data_vol) = 0 then
-            买入量 := 0;
-        else
-        begin
-            data_vol := data_vol[:, 'vol'];
-            sortarray(data_vol);
-            num_vol := int(length(data_vol) / 2);
-            if num_vol = 0 then
-                num_vol := 1;
-            sum_vol := 0;
-
-            for i := 0 to num_vol - 1 do
-                sum_vol += data_vol[i];
-            买入量 := int(sum_vol / num_vol);
         end
 
         // 计算量比
@@ -110,6 +92,26 @@ Begin
         开板 := 计算开板(stock_name, stock_code, day, 今日涨停价, 昨日收盘价, data);
         开板次数 := 开板[0];
         开板最大回撤 := 开板[1];
+
+        day2 := day;
+        while True do
+        begin
+            买入量 := 计算买入量(stock_name, stock_code, day2, time1, time2);
+            if 买入量 = 0 then
+            begin
+                if day2 = IntToDate(上市日) then
+                    break;
+                else
+                begin
+                    with *,array(pn_Stock():stock_code, PN_Cycle():cy_day()) do
+                    begin
+                        day2 := StockEndTPrevNDay(day2, 1);
+                    end
+                end
+            end
+            else
+                break;
+        end
 
         最高价 := 0;
         最低价 := 今日涨停价;
@@ -146,6 +148,84 @@ Begin
     end
     return exportjsonstring(ret);
 End;
+
+function 计算买入量(stock_name, stock_code, day2, time1, time2);
+begin
+    with *,array(pn_Stock():stock_code, pn_date():day2, pn_rate():2, pn_rateday():day2, PN_Cycle():cy_day()) do
+    begin
+        当日涨停价 := StockZtClose(day2);
+    end
+
+    with *,array(pn_Stock():stock_code, pn_date():day2, pn_rate():2, pn_rateday():day2, PN_Cycle():cy_1m()) do
+    begin
+        day_data := select
+        TimeToStr(["date"]) as "时间",
+        ["close"],
+        ['vol']
+        from markettable datekey day2+time1 to day2+time2 of DefaultStockID() end;
+    end
+
+    剔除分钟 := array();
+    剔除时长 := 5;
+    for idx in day_data do
+    begin
+        if day_data[idx]['close'] = 当日涨停价 then
+        begin
+            if not (idx in 剔除分钟) then
+                剔除分钟 &= array(idx);
+
+            if idx <> 0 and day_data[idx-1]['close'] <> 当日涨停价 then
+            begin
+                // 封板
+                j := 1;
+                while idx - j >= 0 do
+                begin
+                    if not (idx - j in 剔除分钟) then
+                        剔除分钟 &= array(idx - j);
+                    j += 1;
+                    if j > 剔除时长 then
+                        break;
+                end
+            end
+
+            if idx <> length(day_data) - 1 and day_data[idx+1]['close'] <> 当日涨停价 then
+            begin
+                // 开板
+                j := 1;
+                while idx + j <= length(day_data) - 1 do
+                begin
+                    if not (idx + j in 剔除分钟) then
+                        剔除分钟 &= array(idx + j);
+                    j += 1;
+                    if j > 剔除时长 then
+                        break;
+                end
+            end
+        end
+    end
+
+    data_vol := array();
+    for idx in day_data do
+    begin
+        if idx in 剔除分钟 then
+            continue;
+
+        data_vol &= array(day_data[idx]['vol']);
+        num_vol += 1;
+    end
+
+    if num_vol < 剔除时长 then
+        return 0;
+
+    sortarray(data_vol);
+    num_vol := int(length(data_vol) / 2);
+    if num_vol = 0 then
+        num_vol := 1;
+    sum_vol := 0;
+    for i := 0 to num_vol - 1 do
+        sum_vol += data_vol[i];
+    return int(sum_vol / num_vol);
+end
 
 function 计算开板(stock_name, stock_code, day, 今日涨停价, 昨日收盘价, data);
 begin
