@@ -32,6 +32,9 @@ class AreaStrategy(Strategy):
             data['打分'] += self.cm.get_config_value('最低点系数') * data['最低点']
             data['打分'] += self.cm.get_config_value('最高点系数') * data['最高点']
 
+            if data['代码'][2:4] in ['60', '00']:
+                data['打分'] *= self.cm.get_config_value('主板系数')
+
             if data['买入量'] == 0:
                 data['打分'] = 0
                 continue
@@ -102,6 +105,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('最高点系数', [0.53])
     area_strategy.add_factor2('最低点系数', [0.45])
     area_strategy.add_factor2('最大断板次数', [2])
+    area_strategy.add_factor2('主板系数', [1.05])
 
     area_strategy.run_in_normal_mode()
     #area_strategy.run_in_linspace_compare_mode(factors)
