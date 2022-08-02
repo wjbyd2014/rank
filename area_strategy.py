@@ -41,6 +41,9 @@ class AreaStrategy(Strategy):
             if data['ma5向上'] == 1:
                 data['打分'] *= self.cm.get_config_value('ma5向上系数')
 
+            if data['昨日是否一字板'] == 1:
+                data['打分'] *= self.cm.get_config_value('昨日一字板系数')
+
             if data['买入量'] == 0:
                 data['打分'] = 0
                 continue
@@ -96,7 +99,7 @@ if __name__ == '__main__':
                                  ['日期', '代码', '名称', '可买金额', '盈亏金额', '盈亏比', '计划买入金额', '实际买入金额', '实际盈亏金额',
                                   '买入价', '卖出价', '卖出日期', '打分', '当日排名'],
                                  ['买入量'])
-    area_strategy.init()
+
     area_strategy.add_factor2('涨停板数1打分', [7])
     area_strategy.add_factor2('涨停板数3打分', [0.75])
     area_strategy.add_factor2('涨停板数5打分', [0.03])
@@ -114,7 +117,16 @@ if __name__ == '__main__':
     area_strategy.add_factor2('主板系数', [1.05])
     area_strategy.add_factor2('ma3向上系数', [0.96])
     area_strategy.add_factor2('ma5向上系数', [0.95])
+    area_strategy.add_factor2('昨日一字板系数', [0.83])
 
-    area_strategy.run_in_normal_mode()
-    #area_strategy.run_in_linspace_compare_mode(factors)
-    #area_strategy.run_in_linspace_count_mode(True)
+    len_factors = area_strategy.len_factors()
+    print(f'len_factors = {len_factors}')
+
+    area_strategy.init()
+
+    if area_strategy.len_factors() == 1:
+        area_strategy.run_in_normal_mode()
+    elif area_strategy.len_factors() <= 20:
+        area_strategy.run_in_linspace_compare_mode()
+    else:
+        area_strategy.run_in_linspace_count_mode(True)
