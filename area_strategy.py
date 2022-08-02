@@ -26,6 +26,8 @@ class AreaStrategy(Strategy):
                 data['打分'] += self.cm.get_config_value('涨停板数5打分') * (data['5日涨停板数'] - data['3日涨停板数'])
             if data['7日涨停板数'] > 0:
                 data['打分'] += self.cm.get_config_value('涨停板数7打分') * (data['7日涨停板数'] - data['5日涨停板数'])
+            if data['10日涨停板数'] > 0:
+                data['打分'] += self.cm.get_config_value('涨停板数10打分') * (data['10日涨停板数'] - data['7日涨停板数'])
 
             data['打分'] += self.cm.get_config_value('最低点系数') * data['最低点']
             data['打分'] += self.cm.get_config_value('最高点系数') * data['最高点']
@@ -86,20 +88,21 @@ if __name__ == '__main__':
                                   '买入价', '卖出价', '卖出日期', '打分', '当日排名'],
                                  ['买入量'])
     area_strategy.init()
-    area_strategy.add_factor2('涨停板数1打分', [3.71])
-    area_strategy.add_factor2('涨停板数3打分', [1.58])
-    area_strategy.add_factor2('涨停板数5打分', [1.38])
-    area_strategy.add_factor2('涨停板数7打分', [5.79])
+    area_strategy.add_factor2('涨停板数1打分', [7])
+    area_strategy.add_factor2('涨停板数3打分', [0.75])
+    area_strategy.add_factor2('涨停板数5打分', [0.03])
+    area_strategy.add_factor2('涨停板数7打分', [6.5])
+    area_strategy.add_factor2('涨停板数10打分', [7])
     area_strategy.add_factor2('最小上市天数', [600])
-    area_strategy.add_factor2('最小量比', [0.28])
+    area_strategy.add_factor2('最小量比', [0.56])
     area_strategy.add_factor2('每只股票最小购买金额', [100])
     area_strategy.add_factor2('买入比', [100])
     area_strategy.add_factor2('最大开板次数', [4])
-    area_strategy.add_factor2('最大开板最大回撤', [14])
-    area_strategy.add_factor2('最高点系数', [0.59])
-    area_strategy.add_factor2('最低点系数', [0.44])
+    area_strategy.add_factor2('最大开板最大回撤', [10.37])
+    area_strategy.add_factor2('最高点系数', [0.53])
+    area_strategy.add_factor2('最低点系数', [0.45])
     area_strategy.add_factor2('最大断板次数', [2])
 
     area_strategy.run_in_normal_mode()
-    #area_strategy.run_in_linspace_compare_mode(list_factors)
+    #area_strategy.run_in_linspace_compare_mode(factors)
     #area_strategy.run_in_linspace_count_mode(True)
