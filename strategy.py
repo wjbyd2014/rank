@@ -74,14 +74,19 @@ class Strategy:
             self.stock_info_cache.build_cache()
 
     def run_in_normal_mode(self):
-        assert (self.cm.len_factors() == 1)
         if not self.__prepare():
             return
 
         self.__run(False, False, True, True, True)
         self.__draw_picture1()
 
-    def run_in_linspace_compare_mode(self, list_legends):
+    def run_in_linspace_compare_mode(self):
+        list_legends = []
+        for factors in self.cm.list_factors:
+            if len(factors) > 1:
+                list_legends = factors
+
+        assert list_legends
         if not self.__prepare():
             return
 
@@ -98,7 +103,7 @@ class Strategy:
         max_earn_money_ratio = 0
         max_earn_money = 0
         best_factors = None
-        len_list_factors = self.cm.len_factors()
+        len_list_factors = self.len_factors()
         num = 0
         for factors in self.list_factors:
             num += 1
@@ -188,8 +193,11 @@ class Strategy:
         for date in ret_date:
             self.date_key[date['date']] = date['datestr']
 
+    def len_factors(self):
+        return self.cm.len_factors()
+
     def add_factor1(self, name, min_value, max_value, interval):
-        return self.cm.add_factor1(name, min_value, max_value, interval)
+        self.cm.add_factor1(name, min_value, max_value, interval)
 
     def add_factor2(self, name, factors):
         self.cm.add_factor2(name, factors)
