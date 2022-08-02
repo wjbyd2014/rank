@@ -107,7 +107,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('涨停板数10打分', [7])
     area_strategy.add_factor2('最小上市天数', [600])
     area_strategy.add_factor2('最小量比', [0.56])
-    area_strategy.add_factor2('每只股票最小购买金额', [100])
+    area_strategy.add_factor1('每只股票最小购买金额', [600])
     area_strategy.add_factor2('买入比', [100])
     area_strategy.add_factor2('最大开板次数', [4])
     area_strategy.add_factor2('最大开板最大回撤', [10.37])
