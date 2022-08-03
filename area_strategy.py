@@ -122,7 +122,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('ma3向上系数', [0.96])
     area_strategy.add_factor2('ma5向上系数', [0.95])
     area_strategy.add_factor2('昨日一字板系数', [0.83])
-    area_strategy.add_factor1('最小可买金额', 200)
+    area_strategy.add_factor2('最小可买金额', [200])
 
     len_factors = area_strategy.len_factors()
     print(f'len_factors = {len_factors}')
