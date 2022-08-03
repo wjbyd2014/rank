@@ -96,7 +96,7 @@ if __name__ == '__main__':
                                  {'time1': '09:33:00', 'time2': '09:53:00',
                                   'time3': '09:54:00', 'time4': '09:58:00', 'num': 800},
                                  '新面积策略股票信息.csv',
-                                 {'上市天数': int, 'ma3向上': int, 'ma5向上': int,
+                                 {'上市天数': float, 'ma3向上': int, 'ma5向上': int,
                                   '上涨起点日': str, '涨板打断次数': int,
                                   '开盘价涨幅': float, '昨日是否一字板': int
                                   },
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('涨停板数10打分', [13])
     area_strategy.add_factor2('最小上市天数', [200])
     area_strategy.add_factor2('最小量比', [0.35])
-    area_strategy.add_factor2('每只股票最小购买金额', [450])
+    area_strategy.add_factor2('尾部资金', [450])
     area_strategy.add_factor2('买入比', [100])
     area_strategy.add_factor2('最大开板次数', [6])
     area_strategy.add_factor2('最大开板最大回撤', [6.3])
