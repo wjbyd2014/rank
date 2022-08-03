@@ -119,7 +119,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('最大开板最大回撤', [6.3])
     area_strategy.add_factor2('最高点系数', [0.47])
     area_strategy.add_factor2('最低点系数', [0.21])
-    area_strategy.add_factor2('最大断板次数', [6])
+    area_strategy.add_factor2('最大断板次数', [7])
     area_strategy.add_factor2('主板系数', [10000])
     area_strategy.add_factor2('ma3向上系数', [1.02])
     area_strategy.add_factor2('ma5向上系数', [0.88])
