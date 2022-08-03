@@ -57,7 +57,7 @@ class Strategy:
         self.fd = None
         self.writer = None
         self.earn_money_list = list()
-        self.max_use_money_per_day = 3000
+        self.max_use_money_per_day = 6000
         self.max_use_money_per_stock = 1800
         self.buy_vol_ratio = 100
 
@@ -72,6 +72,9 @@ class Strategy:
         self.stock_pool_cache.build_cache()
         if self.stock_info_cache:
             self.stock_info_cache.build_cache()
+
+    def set_max_use_money_per_day(self, value):
+        self.max_use_money_per_day = value
 
     def run_in_normal_mode(self):
         if not self.__prepare():
