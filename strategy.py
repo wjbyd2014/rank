@@ -261,7 +261,7 @@ class Strategy:
         ret = 0
         use_money = 0
         left_money = self.max_use_money_per_day * 10000
-        min_use_money_per_stock = self.cm.get_config_value('每只股票最小购买金额') * 10000
+        min_use_money_per_stock = self.cm.get_config_value('尾部资金') * 10000
 
         for data in data_list_copy:
             if left_money > 0 and data['打分'] > 0:
