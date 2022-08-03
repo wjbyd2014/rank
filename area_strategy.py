@@ -68,6 +68,10 @@ class AreaStrategy(Strategy):
                 data['打分'] = 0
                 continue
 
+            if data['可买金额'] < self.cm.get_config_value('最小可买金额') * 10000:
+                data['打分'] = 0
+                continue
+
         data_list_copy.sort(key=lambda x: x['打分'], reverse=True)
 
         for idx, data in enumerate(data_list_copy):
@@ -118,6 +122,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('ma3向上系数', [0.96])
     area_strategy.add_factor2('ma5向上系数', [0.95])
     area_strategy.add_factor2('昨日一字板系数', [0.83])
+    area_strategy.add_factor1('最小可买金额', 200)
 
     len_factors = area_strategy.len_factors()
     print(f'len_factors = {len_factors}')
