@@ -35,7 +35,6 @@ class AreaStrategy(Strategy):
             data['打分'] += self.cm.get_config_value('最高点系数') * data['最高点']
 
             if data['代码'][2:4] not in ['60', '00']:
-                # data['打分'] *= self.cm.get_config_value('主板系数')
                 data['打分'] = 0
 
             if data['ma3向上'] == 1:
@@ -82,9 +81,9 @@ class AreaStrategy(Strategy):
 
 
 if __name__ == '__main__':
-    area_strategy = AreaStrategy('area_strategy_test',
+    area_strategy = AreaStrategy('area_strategy_10cm',
                                  'D:\\ts\\',
-                                 'area_strategy_test.csv',
+                                 'area_strategy_10cm.csv',
                                  ['打分', '当日排名'],
                                  '新面积策略股票池.csv',
                                  {'日期': str, '代码': str, '名称': str, '量比': float,
@@ -128,6 +127,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('最小可买金额', [250])
 
     area_strategy.set_max_use_money_per_day(3000)
+    area_strategy.set_write_csv_filter(lambda data: data['代码'][2:4] in ['60', '00'])
 
     len_factors = area_strategy.len_factors()
     print(f'len_factors = {len_factors}')
