@@ -71,7 +71,7 @@ class AreaStrategy(Strategy):
                 data['打分'] = 0
                 continue
 
-            if data['可买金额'] < self.cm.get_config_value('最小可买金额'):
+            if data['可买金额'] < self.cm.get_config_value('最小可买金额') * 10000:
                 data['打分'] = 0
                 continue
 
@@ -113,19 +113,21 @@ if __name__ == '__main__':
     area_strategy.add_factor2('涨停板数7打分', [0])
     area_strategy.add_factor2('涨停板数10打分', [13])
     area_strategy.add_factor2('最小上市天数', [200])
-    area_strategy.add_factor2('最小量比', [0])
-    area_strategy.add_factor2('每只股票最小购买金额', [100])
+    area_strategy.add_factor2('最小量比', [0.35])
+    area_strategy.add_factor2('每只股票最小购买金额', [450])
     area_strategy.add_factor2('买入比', [100])
-    area_strategy.add_factor2('最大开板次数', [100])
-    area_strategy.add_factor2('最大开板最大回撤', [100])
-    area_strategy.add_factor2('最高点系数', [0])
-    area_strategy.add_factor2('最低点系数', [0])
-    area_strategy.add_factor2('最大断板次数', [100])
+    area_strategy.add_factor2('最大开板次数', [6])
+    area_strategy.add_factor2('最大开板最大回撤', [6.3])
+    area_strategy.add_factor2('最高点系数', [0.47])
+    area_strategy.add_factor2('最低点系数', [0.21])
+    area_strategy.add_factor2('最大断板次数', [6])
     area_strategy.add_factor2('主板系数', [10000])
-    area_strategy.add_factor2('ma3向上系数', [1])
-    area_strategy.add_factor2('ma5向上系数', [1])
-    area_strategy.add_factor2('昨日一字板系数', [1])
-    area_strategy.add_factor2('最小可买金额', [0])
+    area_strategy.add_factor2('ma3向上系数', [1.02])
+    area_strategy.add_factor2('ma5向上系数', [0.88])
+    area_strategy.add_factor2('昨日一字板系数', [0.7])
+    area_strategy.add_factor2('最小可买金额', [250])
+
+    area_strategy.set_max_use_money_per_day(3000)
 
     len_factors = area_strategy.len_factors()
     print(f'len_factors = {len_factors}')
