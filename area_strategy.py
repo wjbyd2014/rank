@@ -128,7 +128,6 @@ if __name__ == '__main__':
     print(f'len_factors = {len_factors}')
 
     area_strategy.init()
-
     if area_strategy.len_factors() == 1:
         area_strategy.run_in_normal_mode()
     elif area_strategy.len_factors() <= 20:
