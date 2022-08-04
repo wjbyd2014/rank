@@ -96,11 +96,11 @@ if __name__ == '__main__':
                                  {'time1': '09:33:00', 'time2': '09:53:00',
                                   'time3': '09:54:00', 'time4': '09:58:00', 'num': 800},
                                  '新面积策略股票信息.csv',
-                                 {'上市天数': float, 'ma3向上': int, 'ma5向上': int,
+                                 {'名称': str, '代码': str, '上市天数': float, 'ma3向上': int, 'ma5向上': int,
                                   '上涨起点日': str, '涨板打断次数': int,
                                   '开盘价涨幅': float, '昨日是否一字板': int
                                   },
-                                 'mianji_stock_info.js',
+                                 'mianji_stock_info_day.js',
                                  {},
                                  ['日期', '代码', '名称', '可买金额', '盈亏金额', '盈亏比', '计划买入金额', '实际买入金额', '实际盈亏金额',
                                   '买入价', '卖出价', '卖出日期', '打分', '当日排名'],
@@ -120,7 +120,6 @@ if __name__ == '__main__':
     area_strategy.add_factor2('最高点系数', [0.47])
     area_strategy.add_factor2('最低点系数', [0.21])
     area_strategy.add_factor2('最大断板次数', [7])
-    area_strategy.add_factor2('主板系数', [10000])
     area_strategy.add_factor2('ma3向上系数', [1.02])
     area_strategy.add_factor2('ma5向上系数', [0.88])
     area_strategy.add_factor2('昨日一字板系数', [0.7])
