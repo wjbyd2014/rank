@@ -55,7 +55,7 @@ class Strategy:
         self.date_to_stock_data = dict()
         self.fd = None
         self.writer = None
-        self.write_csv_filter = lambda data: True
+        self.data_filter = lambda data: True
         self.earn_money_list = list()
         self.max_use_money_per_day = 6000
         self.max_use_money_per_stock = 1800
@@ -73,8 +73,8 @@ class Strategy:
         if self.stock_info_cache:
             self.stock_info_cache.build_cache()
 
-    def set_write_csv_filter(self, write_csv_filter):
-        self.write_csv_filter = write_csv_filter
+    def set_data_filter(self, data_filter):
+        self.data_filter = data_filter
 
     def set_max_use_money_per_day(self, value):
         self.max_use_money_per_day = value
@@ -233,7 +233,7 @@ class Strategy:
             self.writer.writeheader()
 
         for data in data_list_copy:
-            if not self.write_csv_filter(data):
+            if not self.data_filter(data):
                 continue
 
             for key in self.skipped_csv_fields:
