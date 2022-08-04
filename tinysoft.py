@@ -96,15 +96,15 @@ class TinySoft:
             print('断开成功')
         print('未连接,无需断开')
 
-    def get_dates(self, day):
+    def get_dates(self, day, num):
         code = self.F读取脚本文件("dates.js")
-        return self.F执行语句(code, {'day': day})
+        return self.F执行语句(code, {'day': day, 'num': num})
 
     def __del__(self):
         TinySoft.F断开服务器()
 
 
-if __name__ == '__main__':
+"""if __name__ == '__main__':
     ts = TinySoft("D:\\ts\\")
     ts.F断开服务器()
     ts.F连接服务器(b配置文件=False)
@@ -113,4 +113,4 @@ if __name__ == '__main__':
     print(ret_dates)
 
     date = ts.F生成天软日期_str('2022-07-18')
-    print(date)
+    print(date)"""
