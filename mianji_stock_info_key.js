@@ -106,6 +106,9 @@ function 寻找上涨起点(stock_name, stock_code, day, 上市天数, 几日内
 begin
     上市日 := StockFirstDay(stock_code);
 
+    if day = 上市日 then
+        return 0;
+
     回溯天数 := 1; // 回溯多少天
     while True do
     begin
