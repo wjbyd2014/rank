@@ -61,9 +61,55 @@ begin
             上涨起点日 := DateToStr(StockEndTPrevNDay(day, 上涨起点));
             涨板打断次数 := 上涨期间涨停板打算次数(stock_name, stock_code, day, 上涨起点);
         end
+
+        低位涨停板 := 计算低位涨停板(stock_name, stock_code, day);
+        assert(length(低位涨停板) = 5);
     end
     return array(('名称':stock_name, '代码':stock_code, '上市天数':上市天数, 'ma3向上':ma3向上, 'ma5向上':ma5向上,
-        '上涨起点日':上涨起点日, '涨板打断次数':涨板打断次数, '开盘价涨幅':开盘价涨幅, '昨日是否一字板':昨日是否一字板));
+        '上涨起点日':上涨起点日, '涨板打断次数':涨板打断次数, '开盘价涨幅':开盘价涨幅, '昨日是否一字板':昨日是否一字板,
+        '1日低位涨停板数':低位涨停板[0], '3日低位涨停板数':低位涨停板[1], '5日低位涨停板数':低位涨停板[2],
+        '7日低位涨停板数':低位涨停板[3], '10日低位涨停板数':低位涨停板[4]
+        ));
+end
+
+function 计算低位涨停板(stock_name, stock_code, day);
+begin
+    ret := Zeros(5);
+    for i := 1 to 10 do
+    begin
+        当日 := DateToStr(StockEndTPrevNDay(day, i));
+        if StockIsZt(StockEndTPrevNDay(day, i)) then
+        begin
+            当日收盘价 := ref(close(), i);
+            前四日最低价 := ref(close(), i + 1);
+            for j := 2 to 4 do
+            begin
+                前N日收盘价 := ref(close(), i + j);
+                if 前N日收盘价 < 前四日最低价 then
+                    前四日最低价 := 前N日收盘价;
+            end
+
+            ratio := 15;
+            if stock_code[3:4] = '30' or stock_code[3:4] = '68' then
+                ratio := 30;
+
+            涨幅 := count_ratio(当日收盘价, 前四日最低价);
+            if 涨幅 > ratio then
+                continue;
+
+            if i = 1 then
+                ret[0] += 1
+            else if i <= 3 then
+                ret[1] += 1
+            else if i <= 5 then
+                ret[2] += 1
+            else if i <= 7 then
+                ret[3] += 1
+            else
+                ret[4] += 1
+        end
+    end
+    return ret;
 end
 
 function 计算自定义上市天数(stock_code, day);
