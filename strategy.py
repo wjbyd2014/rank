@@ -26,12 +26,12 @@ class Strategy:
         self.csv_field_names += self.stock_pool_cache.keys()
 
         if stock_info_file_name:
-            self.stock_info_cache = ReadWriteKeyCsvCache('stock_info_cache', work_dir,
-                                                         stock_info_fields,
-                                                         self.ts,
-                                                         stock_info_js_file_name,
-                                                         stock_info_js_params,
-                                                         stock_info_file_name)
+            self.stock_info_cache = ReadWriteDateKeyCsvCache('stock_info_cache', work_dir,
+                                                             stock_info_fields,
+                                                             self.ts,
+                                                             stock_info_js_file_name,
+                                                             stock_info_js_params,
+                                                             stock_info_file_name)
             self.csv_field_names += self.stock_info_cache.keys()
 
         self.csv_field_names += csv_field_names + ['卖出价', '卖出日期', '可买金额',
