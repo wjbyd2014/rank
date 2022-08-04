@@ -173,48 +173,96 @@ class ReadWriteDateCsvCache:
         if self.fd:
             self.fd.close()
 
-'''
-if __name__ == '__main__':
-    work_dir = 'D:\\ts\\'
-    sell_cache = ReadOnlyCsvCache('sell_cache', work_dir,
-                                  {'卖出价': float, '卖出日期': str},
-                                  ['卖出明细30.csv', '卖出明细30_未完全卖出.csv', '1.txt'])
-    sell_cache.build_cache()
-    v1 = sell_cache.get('2022-07-08|SH605319')
-    print(v1)
-    v2 = sell_cache.get('2021-04-20|SH688600')
-    print(v2)
 
-    ts = TinySoft(work_dir)
-    ts.F断开服务器()
-    ts.F连接服务器(b配置文件=False)
-    pkje_cache = ReadWriteKeyCsvCache('pkje_cache', work_dir,
-                                      {'竞价涨幅': float, '买一价': float, '盘口金额': float, '早盘跌停盘口比': float},
-                                      ts, 'pankoujine.js', {}, 'pkje.csv')
-    pkje_cache.build_cache()
-    v1 = pkje_cache.get('2022-06-02|SH688150')
-    print(v1)
-    v2 = pkje_cache.get('2022-06-02|SZ000957')
-    print(v2)
-    v3 = pkje_cache.get('2022-07-22|SZ000957')
-    print(v3)
+class ReadWriteDateKeyCsvCache:
+    def __init__(self, name, work_dir, fields_dict, ts, code_file_name, other_params, csv_file_name):
+        self.cache = dict()
+        self.name = name
+        self.ts = ts
+        self.code = ts.F读取脚本文件(code_file_name)
+        self.other_params = other_params
+        self.csv_file_name = work_dir + csv_file_name
+        self.fields_dict = fields_dict
+        self.fd = None
+        self.writer = None
 
-    area_cache = ReadWriteDateCsvCache('area_cache', work_dir,
-                                       {'日期': str, '代码': str, '名称': str, '量比': float, '上市天数': int, '买入量': float,
-                                        '1日涨停板数': int, '3日涨停板数': int, '5日涨停板数': int, '7日涨停板数': int,
-                                        '是否涨停': int, '观察期收盘价涨幅': float, 'ma30向上': int,
-                                        '交叉点': str, '面积': float,
-                                        '观察期结束可以直接买入': int, '观察期结束直接买入价': float,
-                                        '大回撤开始时间': str, '大回撤结束时间': str, '大回撤买入价': float,
-                                        '上一波谷形成时间': str, '双波谷触发时间': str, '双波谷买入价': float, '双波谷涨幅': float,
-                                        '双波谷前开板次数': int, '双波谷前最大开板回撤': float},
-                                       ts,
-                                       'mianji.js', {'time1': '09:33:00', 'time2': '09:52:00', 'num': 800},
-                                       'mianji.csv'
-                                       )
-    area_cache.build_cache()
-    v1 = area_cache.get(20220718, '2022-07-18')
-    print(len(v1))
-    v2 = area_cache.get(20220715, '2022-07-15')
-    print(len(v2))
-'''
+    def build_cache(self):
+        if not os.path.exists(self.csv_file_name):
+            return
+
+        with open(self.csv_file_name, mode='r', newline='') as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                if row['key'] in self.cache:
+                    print('重复key({}) in {}'.format(row['key'], self.name))
+                    return False
+
+                data = {'key': row['key']}
+                for field_name, filed_converter in self.fields_dict.items():
+                    data[field_name] = filed_converter(row[field_name])
+                self.cache[row['key']] = data
+
+    def keys(self):
+        return list(self.fields_dict.keys())
+
+    def get(self, key):
+        if key in self.cache:
+            return self.cache[key]
+        else:
+            key_ = key.split('|')
+            if len(key_) != 2:
+                return None
+
+            day = key_[0]
+            one_day = day.split('-')
+            day = int(one_day[0]) * 10000 + int(one_day[1]) * 100 + int(one_day[2])
+
+            print(f'{self.name} downloading {day}')
+            js_params = {'day': day}
+            for param_name, param_value in self.other_params.items():
+                js_params[param_name] = param_value
+
+            ts_data = self.ts.F执行语句(self.code, js_params)
+
+            if not self.fd:
+                new_file = not os.path.exists(self.csv_file_name)
+                self.fd = open(self.csv_file_name, mode='a', newline='')
+                self.writer = csv.DictWriter(self.fd, fieldnames=['key'] + self.keys())
+                if new_file:
+                    self.writer.writeheader()
+
+            for data in ts_data:
+                data['key'] = key_[0] + '|' + data['代码']
+                self.writer.writerow(data)
+                self.cache[data['key']] = data
+            return self.cache[key]
+
+    def __del__(self):
+        if self.fd:
+            self.fd.close()
+
+
+"""if __name__ == '__main__':
+    test_work_dir = 'D:\\ts\\'
+    test_ts = TinySoft(test_work_dir)
+    test_ts.F断开服务器()
+    test_ts.F连接服务器(b配置文件=False)
+    stock_info_cache = ReadWriteDateKeyCsvCache('stock_info_cache', test_work_dir,
+                                                {'名称': str, '代码': str, '上市天数': float, 'ma3向上': int, 'ma5向上': int,
+                                                 '上涨起点日': str, '涨板打断次数': int,
+                                                 '开盘价涨幅': float, '昨日是否一字板': int
+                                                 }, test_ts, 'mianji_stock_info_day.js',
+                                                {}, 'test_mianji_stock_info_day.csv')
+    stock_info_cache.build_cache()
+    ret_date = test_ts.get_dates(20220727)
+    ret_date.reverse()
+
+    test_date_key = dict()
+    test_ts_dates = [date['date'] for date in ret_date]
+    for date in ret_date:
+        date_str = date['datestr']
+        test_key = date_str+'|SH600000'
+        test_value = stock_info_cache.get(test_key)
+        print(f'{test_key} = ', test_value)"""
+
+
