@@ -1,5 +1,3 @@
-import numpy as np
-
 from strategy import *
 
 
@@ -34,7 +32,7 @@ class AreaStrategy(Strategy):
             data['打分'] += self.cm.get_config_value('最低点系数') * data['最低点']
             data['打分'] += self.cm.get_config_value('最高点系数') * data['最高点']
 
-            if data['代码'][2:4] in ['60', '00']:
+            if not self.data_filter(data):
                 data['打分'] = 0
                 continue
 
@@ -127,7 +125,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('最小可买金额', [50])
 
     area_strategy.set_max_use_money_per_day(3000)
-    area_strategy.set_write_csv_filter(lambda data: data['代码'][2:4] not in ['60', '00'])
+    area_strategy.set_data_filter(lambda data: data['代码'][2:4] not in ['60', '00'])
 
     len_factors = area_strategy.len_factors()
     print(f'len_factors = {len_factors}')
