@@ -9,7 +9,7 @@ class Strategy:
     def __init__(self, name, work_dir, csv_file_name, csv_field_names,
                  stock_pool_file_name, stock_pool_fields, stock_pool_js_file_name, stock_pool_js_params,
                  stock_info_file_name, stock_info_fields, stock_info_js_file_name, stock_info_js_params,
-                 priority_fields, skipped_csv_fields):
+                 priority_fields, skipped_csv_fields, begin_date, date_num):
         self.name = name
         self.ts = TinySoft(work_dir)
         self.sell_cache = ReadOnlyCsvCache('sell_cache', work_dir,
@@ -60,6 +60,8 @@ class Strategy:
         self.max_use_money_per_day = 6000
         self.max_use_money_per_stock = 1800
         self.buy_vol_ratio = 100
+        self.begin_date = begin_date
+        self.date_num = date_num
 
     def __del__(self):
         if self.fd:
@@ -192,7 +194,7 @@ class Strategy:
         return True
 
     def __gen_dates(self):
-        ret_date = self.ts.get_dates(20220727)
+        ret_date = self.ts.get_dates(self.begin_date, self.date_num)
         ret_date.reverse()
 
         self.ts_dates = [date['date'] for date in ret_date]
