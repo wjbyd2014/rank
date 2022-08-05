@@ -57,6 +57,10 @@ class AreaStrategy(Strategy):
                 data['打分'] = 0
                 continue
 
+            if data['开盘价涨幅'] < self.cm.get_config_value(tag + '开盘价最小涨幅'):
+                data['打分'] = 0
+                continue
+
             data['打分'] = data['平均面积']
 
             if data['1日涨停板数'] > 0:
@@ -176,6 +180,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('10cm7日低位涨停板数打分', [3])
     area_strategy.add_factor2('10cm10日低位涨停板数打分', [0])
     area_strategy.add_factor2('10cm开盘最大回撤', [-7])
+    area_strategy.add_factor2('10cm开盘价最小涨幅', [-6])
 
     area_strategy.add_factor2('20cm涨停板数1打分', [10])
     area_strategy.add_factor2('20cm涨停板数3打分', [4])
@@ -184,7 +189,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('20cm涨停板数10打分', [7.5])
     area_strategy.add_factor2('20cm最小上市天数', [800])
     area_strategy.add_factor2('20cm最小量比', [0.7])
-    area_strategy.add_factor2('20cm尾部资金', [300])  # 当买完一个股票后，资金不足300W时，就不继续买了，衡量资金利用率的
+    area_strategy.add_factor2('20cm尾部资金', [300])  # 当买完一个股票后，资金不足300W时，就不继续买了，衡量资金利用率
     area_strategy.add_factor2('20cm买入比', [100])
     area_strategy.add_factor2('20cm最大开板次数', [3])
     area_strategy.add_factor2('20cm最大开板最大回撤', [10.4])
@@ -194,13 +199,14 @@ if __name__ == '__main__':
     area_strategy.add_factor2('20cmma3向上系数', [0.88])
     area_strategy.add_factor2('20cmma5向上系数', [0.86])
     area_strategy.add_factor2('20cm昨日一字板系数', [0.61])
-    area_strategy.add_factor2('20cm最小可买金额', [500])  # 可买金额低于50W的直接跳过，衡量股票自身的
+    area_strategy.add_factor2('20cm最小可买金额', [500])  # 可买金额低于500W的直接跳过，衡量股票自身
     area_strategy.add_factor2('20cm1日低位涨停板数打分', [0])
     area_strategy.add_factor2('20cm3日低位涨停板数打分', [8])
     area_strategy.add_factor2('20cm5日低位涨停板数打分', [0])
     area_strategy.add_factor2('20cm7日低位涨停板数打分', [0])
     area_strategy.add_factor2('20cm10日低位涨停板数打分', [0])
     area_strategy.add_factor2('20cm开盘最大回撤', [-11.5])
+    area_strategy.add_factor2('20cm开盘价最小涨幅', [-4])
 
     area_strategy.add_factor2('20cm资金比', [0.5])
 
