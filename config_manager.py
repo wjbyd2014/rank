@@ -6,10 +6,12 @@ class ConfigManager:
 
     def add_factor1(self, name, min_value, max_value, interval):
         self.list_factors.append(self.分箱(min_value, max_value, interval))
+        assert name not in self.config_values
         self.config_values[name] = None
 
     def add_factor2(self, name, factors):
         self.list_factors.append(factors)
+        assert name not in self.config_values
         self.config_values[name] = None
 
     @staticmethod
