@@ -2,7 +2,8 @@ class ConfigManager:
     def __init__(self, log_path):
         self.list_factors = list()
         self.config_values = dict()
-        self.log_fd = open(log_path, 'w')
+        self.log_fd = None
+        self.log_path = log_path
 
     def add_factor1(self, name, min_value, max_value, interval):
         self.list_factors.append(self.分箱(min_value, max_value, interval))
@@ -29,10 +30,8 @@ class ConfigManager:
 
     def update_configs(self, list_config_values):
         assert (len(list_config_values) == len(self.config_values))
-        i = 0
-        for config_name in self.config_values:
+        for i, config_name in enumerate(self.config_values):
             self.config_values[config_name] = list_config_values[i]
-            i += 1
 
     def gen_factors(self):
         return self.__gen_factors(self.list_factors)
@@ -55,12 +54,14 @@ class ConfigManager:
 
     def log(self, max_total_earn_money):
         log_str = ''
-        if self.log_fd:
-            for config_name in self.config_values:
-                log_str += config_name + '=' + str(self.config_values[config_name]) + ' '
-            log_str += '收益 = {}\n'.format(max_total_earn_money)
-            self.log_fd.write(log_str)
-            self.log_fd.flush()
+        if not self.log_fd:
+            self.log_fd = open(self.log_path, 'w')
+
+        for config_name in self.config_values:
+            log_str += config_name + '=' + str(self.config_values[config_name]) + ' '
+        log_str += '收益 = {}\n'.format(max_total_earn_money)
+        self.log_fd.write(log_str)
+        self.log_fd.flush()
 
     def print(self, num, len_list_factors, total_earn_money, earn_money_ratio):
         log_str = f'{num}/{len_list_factors} '
