@@ -228,13 +228,13 @@ class Strategy:
                 data['盈亏比'] = round((data['卖出价'] / data['买入价'] - 1) * 100, 2)
                 data['盈亏金额'] = round((data['卖出价'] - data['买入价']) * data['买入量'])
 
-    def __write_csv(self, data_list_copy):
+    def __write_csv(self, data_list):
         if not self.fd:
             self.fd = open(self.work_dir + self.csv_file_name, mode='w', newline='')
             self.writer = csv.DictWriter(self.fd, fieldnames=self.csv_field_names)
             self.writer.writeheader()
 
-        for data in data_list_copy:
+        for data in data_list:
             if not self.data_filter(data):
                 continue
 
@@ -256,16 +256,22 @@ class Strategy:
         draw_list_earn_money(self.earn_money_list, list_legends, self.work_dir, self.name + '收益图', True)
 
     @abstractmethod
-    def select_stocks(self, data_list_copy):
+    def select_stocks(self, data_list):
         pass
 
-    def count_stock_area_earn_money(self, data_list_copy, count_all):
+    def count_stock_area_earn_money(self, data_list, count_all):
+        data_list.sort(key=lambda x: x['打分'], reverse=True)
+        for idx, data in enumerate(data_list):
+            data['当日排名'] = idx + 1
+        return self._count_stock_earn_money(data_list, count_all)
+
+    def _count_stock_earn_money(self, data_list, count_all):
         ret = 0
         use_money = 0
         left_money = self.max_use_money_per_day * 10000
         min_use_money_per_stock = self.cm.get_config_value('尾部资金') * 10000
 
-        for data in data_list_copy:
+        for data in data_list:
             if left_money > 0 and data['打分'] > 0:
                 if data['计划买入金额'] > left_money:
                     data['实际买入金额'] = left_money
