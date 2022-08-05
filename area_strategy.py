@@ -84,7 +84,7 @@ class AreaStrategy(Strategy):
             if data['昨日是否一字板'] == 1:
                 data['打分'] *= self.cm.get_config_value(tag+'昨日一字板系数')
 
-    def count_stock_area_earn_money(self, data_list, count_all):
+    def count_stock_area_earn_money(self, data_list, normal_mode):
         total_earn_money = 0
         total_use_money = 0
 
@@ -96,7 +96,7 @@ class AreaStrategy(Strategy):
         total_money_20cm = self.max_use_money_per_day * self.cm.get_config_value('20cm资金比') * 10000
         earn_money_20cm, use_money_20cm, _ = \
             self._count_stock_earn_money(
-                data_list_20cm, total_money_20cm, self.cm.get_config_value('20cm尾部资金') * 10000, count_all)
+                data_list_20cm, total_money_20cm, self.cm.get_config_value('20cm尾部资金') * 10000, normal_mode)
         total_earn_money += earn_money_20cm
         total_use_money += use_money_20cm
 
@@ -110,10 +110,12 @@ class AreaStrategy(Strategy):
             total_money_10cm += (total_money_20cm - use_money_20cm)"""
         earn_money_10cm, use_money_10cm, left_money20cm = \
             self._count_stock_earn_money(
-                data_list_10cm, total_money_10cm, self.cm.get_config_value('10cm尾部资金') * 10000, count_all)
+                data_list_10cm, total_money_10cm, self.cm.get_config_value('10cm尾部资金') * 10000, normal_mode)
         total_earn_money += earn_money_10cm
         total_use_money += use_money_10cm
 
+        if normal_mode:
+            data_list.sort(key=lambda x: x['当日排名'], reverse=False)
         return total_earn_money, total_use_money, left_money20cm
 
 
