@@ -29,64 +29,64 @@ class AreaStrategy(Strategy):
             else:
                 tag = '20cm'
 
-            if data['量比'] < self.cm.get_config_value(tag+'最小量比'):
+            if data['量比'] < self.cm.get_config_value(tag + '最小量比'):
                 data['打分'] = 0
                 continue
 
-            if data['开板次数'] > self.cm.get_config_value(tag+'最大开板次数'):
+            if data['开板次数'] > self.cm.get_config_value(tag + '最大开板次数'):
                 data['打分'] = 0
                 continue
 
-            if data['开板最大回撤'] > self.cm.get_config_value(tag+'最大开板最大回撤'):
+            if data['开板最大回撤'] > self.cm.get_config_value(tag + '最大开板最大回撤'):
                 data['打分'] = 0
                 continue
 
-            if data['上市天数'] < self.cm.get_config_value(tag+'最小上市天数'):
+            if data['上市天数'] < self.cm.get_config_value(tag + '最小上市天数'):
                 data['打分'] = 0
                 continue
 
-            if data['涨板打断次数'] > self.cm.get_config_value(tag+'最大断板次数'):
+            if data['涨板打断次数'] > self.cm.get_config_value(tag + '最大断板次数'):
                 data['打分'] = 0
                 continue
 
-            if data['可买金额'] < self.cm.get_config_value(tag+'最小可买金额') * 10000:
+            if data['可买金额'] < self.cm.get_config_value(tag + '最小可买金额') * 10000:
                 data['打分'] = 0
                 continue
 
-            if data['开盘最大回撤'] < self.cm.get_config_value(tag+'开盘最大回撤'):
+            if data['开盘最大回撤'] < self.cm.get_config_value(tag + '开盘最大回撤'):
                 data['打分'] = 0
                 continue
 
             data['打分'] = data['平均面积']
 
             if data['1日涨停板数'] > 0:
-                data['打分'] += self.cm.get_config_value(tag+'涨停板数1打分')
+                data['打分'] += self.cm.get_config_value(tag + '涨停板数1打分')
             if data['3日涨停板数'] > 0:
-                data['打分'] += self.cm.get_config_value(tag+'涨停板数3打分') * (data['3日涨停板数'] - data['1日涨停板数'])
+                data['打分'] += self.cm.get_config_value(tag + '涨停板数3打分') * (data['3日涨停板数'] - data['1日涨停板数'])
             if data['5日涨停板数'] > 0:
-                data['打分'] += self.cm.get_config_value(tag+'涨停板数5打分') * (data['5日涨停板数'] - data['3日涨停板数'])
+                data['打分'] += self.cm.get_config_value(tag + '涨停板数5打分') * (data['5日涨停板数'] - data['3日涨停板数'])
             if data['7日涨停板数'] > 0:
-                data['打分'] += self.cm.get_config_value(tag+'涨停板数7打分') * (data['7日涨停板数'] - data['5日涨停板数'])
+                data['打分'] += self.cm.get_config_value(tag + '涨停板数7打分') * (data['7日涨停板数'] - data['5日涨停板数'])
             if data['10日涨停板数'] > 0:
-                data['打分'] += self.cm.get_config_value(tag+'涨停板数10打分') * (data['10日涨停板数'] - data['7日涨停板数'])
+                data['打分'] += self.cm.get_config_value(tag + '涨停板数10打分') * (data['10日涨停板数'] - data['7日涨停板数'])
 
-            data['打分'] += data['1日低位涨停板数'] * self.cm.get_config_value(tag+'1日低位涨停板数打分')
-            data['打分'] += data['3日低位涨停板数'] * self.cm.get_config_value(tag+'3日低位涨停板数打分')
-            data['打分'] += data['5日低位涨停板数'] * self.cm.get_config_value(tag+'5日低位涨停板数打分')
-            data['打分'] += data['7日低位涨停板数'] * self.cm.get_config_value(tag+'7日低位涨停板数打分')
-            data['打分'] += data['10日低位涨停板数'] * self.cm.get_config_value(tag+'10日低位涨停板数打分')
+            data['打分'] += data['1日低位涨停板数'] * self.cm.get_config_value(tag + '1日低位涨停板数打分')
+            data['打分'] += data['3日低位涨停板数'] * self.cm.get_config_value(tag + '3日低位涨停板数打分')
+            data['打分'] += data['5日低位涨停板数'] * self.cm.get_config_value(tag + '5日低位涨停板数打分')
+            data['打分'] += data['7日低位涨停板数'] * self.cm.get_config_value(tag + '7日低位涨停板数打分')
+            data['打分'] += data['10日低位涨停板数'] * self.cm.get_config_value(tag + '10日低位涨停板数打分')
 
-            data['打分'] += self.cm.get_config_value(tag+'最低点系数') * data['最低点']
-            data['打分'] += self.cm.get_config_value(tag+'最高点系数') * data['最高点']
+            data['打分'] += self.cm.get_config_value(tag + '最低点系数') * data['最低点']
+            data['打分'] += self.cm.get_config_value(tag + '最高点系数') * data['最高点']
 
             if data['ma3向上'] == 1:
-                data['打分'] *= self.cm.get_config_value(tag+'ma3向上系数')
+                data['打分'] *= self.cm.get_config_value(tag + 'ma3向上系数')
 
             if data['ma5向上'] == 1:
-                data['打分'] *= self.cm.get_config_value(tag+'ma5向上系数')
+                data['打分'] *= self.cm.get_config_value(tag + 'ma5向上系数')
 
             if data['昨日是否一字板'] == 1:
-                data['打分'] *= self.cm.get_config_value(tag+'昨日一字板系数')
+                data['打分'] *= self.cm.get_config_value(tag + '昨日一字板系数')
 
     def count_stock_area_earn_money(self, data_list, normal_mode):
         total_earn_money = 0
@@ -184,7 +184,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('20cm涨停板数10打分', [7.5])
     area_strategy.add_factor2('20cm最小上市天数', [800])
     area_strategy.add_factor2('20cm最小量比', [0.7])
-    area_strategy.add_factor2('20cm尾部资金', [300])
+    area_strategy.add_factor2('20cm尾部资金', [300])  # 当买完一个股票后，资金不足300W时，就不继续买了，衡量资金利用率的
     area_strategy.add_factor2('20cm买入比', [100])
     area_strategy.add_factor2('20cm最大开板次数', [3])
     area_strategy.add_factor2('20cm最大开板最大回撤', [10.4])
@@ -194,7 +194,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('20cmma3向上系数', [0.88])
     area_strategy.add_factor2('20cmma5向上系数', [0.86])
     area_strategy.add_factor2('20cm昨日一字板系数', [0.61])
-    area_strategy.add_factor2('20cm最小可买金额', [50])
+    area_strategy.add_factor2('20cm最小可买金额', [500])  # 可买金额低于50W的直接跳过，衡量股票自身的
     area_strategy.add_factor2('20cm1日低位涨停板数打分', [0])
     area_strategy.add_factor2('20cm3日低位涨停板数打分', [8])
     area_strategy.add_factor2('20cm5日低位涨停板数打分', [0])
@@ -214,4 +214,4 @@ if __name__ == '__main__':
     elif area_strategy.len_factors() <= 20:
         area_strategy.run_in_linspace_compare_mode()
     else:
-        area_strategy.run_in_linspace_count_mode(True)
+        area_strategy.run_in_linspace_count_mode(False)
