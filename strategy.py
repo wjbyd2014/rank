@@ -263,13 +263,13 @@ class Strategy:
         data_list.sort(key=lambda x: x['打分'], reverse=True)
         for idx, data in enumerate(data_list):
             data['当日排名'] = idx + 1
-        return self._count_stock_earn_money(data_list, count_all)
+        return self._count_stock_earn_money(
+            data_list, self.max_use_money_per_day * 10000, self.cm.get_config_value('尾部资金') * 10000, count_all)
 
-    def _count_stock_earn_money(self, data_list, count_all):
-        ret = 0
-        use_money = 0
-        left_money = self.max_use_money_per_day * 10000
-        min_use_money_per_stock = self.cm.get_config_value('尾部资金') * 10000
+    def _count_stock_earn_money(self, data_list, total_money, min_use_money_per_stock, count_all):
+        total_earn_money = 0
+        total_use_money = 0
+        left_money = total_money
 
         for data in data_list:
             if left_money > 0 and data['打分'] > 0:
@@ -285,14 +285,14 @@ class Strategy:
                 real_buy_vol = int(data['实际买入金额'] / data['买入价'])
                 data['实际买入金额'] = data['买入价'] * real_buy_vol
                 real_use_money = data['实际买入金额'] * (1 + service_fee)
-                use_money += real_use_money
+                total_use_money += real_use_money
                 left_money -= real_use_money
                 data['实际盈亏金额'] = real_buy_vol * data['卖出价'] * (1 - service_fee - 印花税) - real_use_money
-                ret += data['实际盈亏金额']
+                total_earn_money += data['实际盈亏金额']
                 if left_money < min_use_money_per_stock:
                     left_money = 0
             else:
                 data['实际买入金额'] = data['实际盈亏金额'] = 0
                 if not count_all:
                     break
-        return ret, use_money, left_money
+        return total_earn_money, total_use_money, left_money
