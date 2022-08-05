@@ -1,6 +1,5 @@
 import os
 import csv
-from tinysoft import TinySoft
 
 
 class ReadOnlyCsvCache:
