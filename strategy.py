@@ -85,7 +85,7 @@ class Strategy:
         if not self.__prepare():
             return
 
-        self.__run(False, False, True, True, True)
+        self.__run(False, False, True, True)
         self.__draw_picture1()
 
     def run_in_linspace_compare_mode(self):
@@ -98,16 +98,16 @@ class Strategy:
         if not self.__prepare():
             return
 
-        self.__run(False, False, True, False, False)
+        self.__run(False, False, True, False)
         self.__draw_picture2(list_legends)
 
     def run_in_linspace_count_mode(self, do_print=False):
         if not self.__prepare():
             return
 
-        self.__run(do_print, True, False, False, False)
+        self.__run(do_print, True, False, False)
 
-    def __run(self, do_print1, do_print2, do_collect_earn_money, count_all, write_csv):
+    def __run(self, do_print1, do_print2, do_collect_earn_money, normal_mode):
         max_earn_money_ratio = 0
         max_earn_money = 0
         best_factors = None
@@ -124,12 +124,12 @@ class Strategy:
                 data_list_copy = self.date_to_stock_data[date].copy()
                 self.select_stocks(data_list_copy)
                 got_money, use_money, left_money = \
-                    self.count_stock_area_earn_money(data_list_copy, count_all)
+                    self.count_stock_area_earn_money(data_list_copy, normal_mode)
 
                 if left_money > 0:
                     print(f"{date} left {left_money}\n")
 
-                if write_csv:
+                if normal_mode:
                     self.__write_csv(data_list_copy)
 
                 earn_money[date] = got_money
@@ -141,7 +141,9 @@ class Strategy:
                 max_earn_money = total_earn_money
                 max_earn_money_ratio = earn_money_ratio
                 best_factors = factors
-                self.cm.log(max_earn_money_ratio)
+
+                if not normal_mode:
+                    self.cm.log(max_earn_money_ratio)
 
             if do_print1 and num % 100 == 0:
                 print("num = ", num, ' 当前最大收益 = ', max_earn_money_ratio)
@@ -259,14 +261,15 @@ class Strategy:
     def select_stocks(self, data_list):
         pass
 
-    def count_stock_area_earn_money(self, data_list, count_all):
+    def count_stock_area_earn_money(self, data_list, normal_mode):
         data_list.sort(key=lambda x: x['打分'], reverse=True)
         for idx, data in enumerate(data_list):
             data['当日排名'] = idx + 1
         return self._count_stock_earn_money(
-            data_list, self.max_use_money_per_day * 10000, self.cm.get_config_value('尾部资金') * 10000, count_all)
+            data_list, self.max_use_money_per_day * 10000, self.cm.get_config_value('尾部资金') * 10000, normal_mode)
 
-    def _count_stock_earn_money(self, data_list, total_money, min_use_money_per_stock, count_all):
+    @staticmethod
+    def _count_stock_earn_money(data_list, total_money, retain_money, normal_mode):
         total_earn_money = 0
         total_use_money = 0
         left_money = total_money
@@ -289,10 +292,10 @@ class Strategy:
                 left_money -= real_use_money
                 data['实际盈亏金额'] = real_buy_vol * data['卖出价'] * (1 - service_fee - 印花税) - real_use_money
                 total_earn_money += data['实际盈亏金额']
-                if left_money < min_use_money_per_stock:
+                if left_money < retain_money:
                     left_money = 0
             else:
                 data['实际买入金额'] = data['实际盈亏金额'] = 0
-                if not count_all:
+                if not normal_mode:
                     break
         return total_earn_money, total_use_money, left_money
