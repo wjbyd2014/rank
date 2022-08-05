@@ -126,13 +126,15 @@ Begin
         最高点 := count_ratio(最高价, 昨日收盘价);
         最低点 := count_ratio(最低价, 昨日收盘价);
 
+        开盘最大回撤 := 计算开盘最大回撤(stock_name, stock_code, day, time2);
+
         arr := array(('名称':stock_name, '代码':stock_code, '量比':量比,
             '买入量':买入量, '买入价':买入价,
             '交叉点':交叉点, '总面积':总面积, '平均面积':平均面积,
             '1日涨停板数': 涨停板数1, '3日涨停板数':涨停板数3,
             '5日涨停板数':涨停板数5, '7日涨停板数':涨停板数7, '10日涨停板数':涨停板数10,
             '开板次数':开板次数, '开板最大回撤':开板最大回撤,
-            '最高点':最高点, '最低点':最低点));
+            '最高点':最高点, '最低点':最低点, '开盘最大回撤':开盘最大回撤));
 
         if 涨停板数1 > 0 or 涨停板数3 > 0 or 涨停板数5 > 0 or 涨停板数7 > 0 or 涨停板数10 > 0 then
             有涨停板股票列表 &= arr;
@@ -148,6 +150,25 @@ Begin
     end
     return exportjsonstring(ret);
 End;
+
+function 计算开盘最大回撤(stock_name, stock_code, day, time2);
+begin
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_1m()) do
+    begin
+        data := select
+        TimeToStr(["date"]) as "时间",
+        ["close"]
+        from markettable datekey day to day+time2 of DefaultStockID() end;
+    end
+
+    data_close := data[:, 'close'];
+    最大跌幅 := MaxDrawDown(data_close, 0, 0);
+    最大跌幅持续时间 := 最大跌幅[1] - 最大跌幅[0];
+    最大跌幅开始时间 := data[最大跌幅[0]]['时间'];
+    最大跌幅结束时间 := data[最大跌幅[1]]['时间'];
+    最大跌幅百分比 := floatn(最大跌幅[3] * 100, 2);
+    return 最大跌幅百分比;
+end
 
 function 计算买入量(stock_name, stock_code, day2, time1, time2);
 begin
