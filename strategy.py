@@ -105,7 +105,7 @@ class Strategy:
         if not self.__prepare():
             return
 
-        self.__run(do_print, True, False, False)
+        self.__run(True, do_print, False, False)
 
     def __run(self, do_print1, do_print2, do_collect_earn_money, normal_mode):
         max_earn_money_ratio = 0
