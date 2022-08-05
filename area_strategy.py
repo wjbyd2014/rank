@@ -175,7 +175,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('20cm涨停板数7打分', [4])
     area_strategy.add_factor2('20cm涨停板数10打分', [7.5])
     area_strategy.add_factor2('20cm最小上市天数', [800])
-    area_strategy.add_factor2('20cm最小量比', [0.35])
+    area_strategy.add_factor2('20cm最小量比', [0.7])
     area_strategy.add_factor2('20cm尾部资金', [300])
     area_strategy.add_factor2('20cm买入比', [100])
     area_strategy.add_factor2('20cm最大开板次数', [3])
