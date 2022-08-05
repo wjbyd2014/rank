@@ -114,7 +114,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('涨停板数7打分', [4])
     area_strategy.add_factor2('涨停板数10打分', [7.5])
     area_strategy.add_factor2('最小上市天数', [800])
-    area_strategy.add_factor2('最小量比', [0.35])
+    area_strategy.add_factor2('最小量比', [0.7]) # 0.35可以把钱用完，但客单价低
     area_strategy.add_factor2('尾部资金', [300])
     area_strategy.add_factor2('买入比', [100])
     area_strategy.add_factor2('最大开板次数', [3])
