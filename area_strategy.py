@@ -150,7 +150,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('10cm涨停板数1打分', [1])
     area_strategy.add_factor2('10cm涨停板数3打分', [1])
     area_strategy.add_factor2('10cm涨停板数5打分', [3])
-    area_strategy.add_factor2('10cm涨停板数7打分', [0])
+    area_strategy.add_factor2('10cm涨停板数7打分', [0.18])
     area_strategy.add_factor2('10cm涨停板数10打分', [13])
     area_strategy.add_factor2('10cm最小上市天数', [200])
     area_strategy.add_factor2('10cm最小量比', [0.35])
@@ -173,7 +173,7 @@ if __name__ == '__main__':
 
     area_strategy.add_factor2('20cm涨停板数1打分', [10])
     area_strategy.add_factor2('20cm涨停板数3打分', [4])
-    area_strategy.add_factor2('20cm涨停板数5打分', [0])
+    area_strategy.add_factor2('20cm涨停板数5打分', [0.07])
     area_strategy.add_factor2('20cm涨停板数7打分', [4])
     area_strategy.add_factor2('20cm涨停板数10打分', [7.5])
     area_strategy.add_factor2('20cm最小上市天数', [800])
