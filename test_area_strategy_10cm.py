@@ -14,44 +14,13 @@ class AreaStrategy(Strategy):
     def __del__(self):
         super().__del__()
 
-    def select_stocks(self, data_list_copy):
-        for data in data_list_copy:
-            data['打分'] = data['平均面积']
-
-            if data['1日涨停板数'] > 0:
-                data['打分'] += self.cm.get_config_value('涨停板数1打分')
-            if data['3日涨停板数'] > 0:
-                data['打分'] += self.cm.get_config_value('涨停板数3打分') * (data['3日涨停板数'] - data['1日涨停板数'])
-            if data['5日涨停板数'] > 0:
-                data['打分'] += self.cm.get_config_value('涨停板数5打分') * (data['5日涨停板数'] - data['3日涨停板数'])
-            if data['7日涨停板数'] > 0:
-                data['打分'] += self.cm.get_config_value('涨停板数7打分') * (data['7日涨停板数'] - data['5日涨停板数'])
-            if data['10日涨停板数'] > 0:
-                data['打分'] += self.cm.get_config_value('涨停板数10打分') * (data['10日涨停板数'] - data['7日涨停板数'])
-
-            data['打分'] += data['1日低位涨停板数'] * self.cm.get_config_value('1日低位涨停板数打分')
-            data['打分'] += data['3日低位涨停板数'] * self.cm.get_config_value('3日低位涨停板数打分')
-            data['打分'] += data['5日低位涨停板数'] * self.cm.get_config_value('5日低位涨停板数打分')
-            data['打分'] += data['7日低位涨停板数'] * self.cm.get_config_value('7日低位涨停板数打分')
-            data['打分'] += data['10日低位涨停板数'] * self.cm.get_config_value('10日低位涨停板数打分')
-
-            data['打分'] += self.cm.get_config_value('最低点系数') * data['最低点']
-            data['打分'] += self.cm.get_config_value('最高点系数') * data['最高点']
-
-            if not self.data_filter(data):
+    def select_stocks(self, data_list):
+        for data in data_list:
+            if data['买入量'] == 0:
                 data['打分'] = 0
                 continue
 
-            if data['ma3向上'] == 1:
-                data['打分'] *= self.cm.get_config_value('ma3向上系数')
-
-            if data['ma5向上'] == 1:
-                data['打分'] *= self.cm.get_config_value('ma5向上系数')
-
-            if data['昨日是否一字板'] == 1:
-                data['打分'] *= self.cm.get_config_value('昨日一字板系数')
-
-            if data['买入量'] == 0:
+            if not self.data_filter(data):
                 data['打分'] = 0
                 continue
 
@@ -79,10 +48,36 @@ class AreaStrategy(Strategy):
                 data['打分'] = 0
                 continue
 
-        data_list_copy.sort(key=lambda x: x['打分'], reverse=True)
+            data['打分'] = data['平均面积']
 
-        for idx, data in enumerate(data_list_copy):
-            data['当日排名'] = idx + 1
+            if data['1日涨停板数'] > 0:
+                data['打分'] += self.cm.get_config_value('涨停板数1打分')
+            if data['3日涨停板数'] > 0:
+                data['打分'] += self.cm.get_config_value('涨停板数3打分') * (data['3日涨停板数'] - data['1日涨停板数'])
+            if data['5日涨停板数'] > 0:
+                data['打分'] += self.cm.get_config_value('涨停板数5打分') * (data['5日涨停板数'] - data['3日涨停板数'])
+            if data['7日涨停板数'] > 0:
+                data['打分'] += self.cm.get_config_value('涨停板数7打分') * (data['7日涨停板数'] - data['5日涨停板数'])
+            if data['10日涨停板数'] > 0:
+                data['打分'] += self.cm.get_config_value('涨停板数10打分') * (data['10日涨停板数'] - data['7日涨停板数'])
+
+            data['打分'] += data['1日低位涨停板数'] * self.cm.get_config_value('1日低位涨停板数打分')
+            data['打分'] += data['3日低位涨停板数'] * self.cm.get_config_value('3日低位涨停板数打分')
+            data['打分'] += data['5日低位涨停板数'] * self.cm.get_config_value('5日低位涨停板数打分')
+            data['打分'] += data['7日低位涨停板数'] * self.cm.get_config_value('7日低位涨停板数打分')
+            data['打分'] += data['10日低位涨停板数'] * self.cm.get_config_value('10日低位涨停板数打分')
+
+            data['打分'] += self.cm.get_config_value('最低点系数') * data['最低点']
+            data['打分'] += self.cm.get_config_value('最高点系数') * data['最高点']
+
+            if data['ma3向上'] == 1:
+                data['打分'] *= self.cm.get_config_value('ma3向上系数')
+
+            if data['ma5向上'] == 1:
+                data['打分'] *= self.cm.get_config_value('ma5向上系数')
+
+            if data['昨日是否一字板'] == 1:
+                data['打分'] *= self.cm.get_config_value('昨日一字板系数')
 
 
 if __name__ == '__main__':
