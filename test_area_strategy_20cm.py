@@ -117,11 +117,11 @@ if __name__ == '__main__':
                                   '买入价', '卖出价', '卖出日期', '打分', '当日排名'],
                                  ['买入量'], 20220727, 300)
 
-    area_strategy.add_factor2('涨停板数1打分', [10])
-    area_strategy.add_factor2('涨停板数3打分', [4])
-    area_strategy.add_factor2('涨停板数5打分', [0.07])
-    area_strategy.add_factor2('涨停板数7打分', [4])
-    area_strategy.add_factor2('涨停板数10打分', [7.5])
+    area_strategy.add_factor2('涨停板数1打分', [10.4])
+    area_strategy.add_factor2('涨停板数3打分', [3.6])
+    area_strategy.add_factor2('涨停板数5打分', [0.01])
+    area_strategy.add_factor2('涨停板数7打分', [3.6])
+    area_strategy.add_factor2('涨停板数10打分', [7.7])
     area_strategy.add_factor2('最小上市天数', [800])
     area_strategy.add_factor2('最小量比', [0.7])
     area_strategy.add_factor2('尾部资金', [300])
@@ -156,4 +156,4 @@ if __name__ == '__main__':
     elif area_strategy.len_factors() <= 20:
         area_strategy.run_in_linspace_compare_mode()
     else:
-        area_strategy.run_in_linspace_count_mode(True)
+        area_strategy.run_in_linspace_count_mode(False)
