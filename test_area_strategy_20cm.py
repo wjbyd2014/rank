@@ -48,6 +48,14 @@ class AreaStrategy(Strategy):
                 data['打分'] = 0
                 continue
 
+            if data['开盘最大回撤'] < self.cm.get_config_value('开盘最大回撤'):
+                data['打分'] = 0
+                continue
+
+            if data['开盘价涨幅'] < self.cm.get_config_value('开盘价最小涨幅'):
+                data['打分'] = 0
+                continue
+
             data['打分'] = data['平均面积']
 
             if data['1日涨停板数'] > 0:
@@ -90,7 +98,8 @@ if __name__ == '__main__':
                                   '买入量': float, '买入价': float,
                                   '交叉点': str, '总面积': float, '平均面积': float,
                                   '开板次数': int, '开板最大回撤': float, '最高点': float, '最低点': float,
-                                  '1日涨停板数': int, '3日涨停板数': int, '5日涨停板数': int, '7日涨停板数': int, '10日涨停板数': int
+                                  '1日涨停板数': int, '3日涨停板数': int, '5日涨停板数': int, '7日涨停板数': int, '10日涨停板数': int,
+                                  '开盘最大回撤': float
                                   },
                                  'mianji_stock_poll.js',
                                  {'time1': '09:33:00', 'time2': '09:53:00',
@@ -110,11 +119,11 @@ if __name__ == '__main__':
 
     area_strategy.add_factor2('涨停板数1打分', [10])
     area_strategy.add_factor2('涨停板数3打分', [4])
-    area_strategy.add_factor2('涨停板数5打分', [0])
+    area_strategy.add_factor2('涨停板数5打分', [0.07])
     area_strategy.add_factor2('涨停板数7打分', [4])
     area_strategy.add_factor2('涨停板数10打分', [7.5])
     area_strategy.add_factor2('最小上市天数', [800])
-    area_strategy.add_factor2('最小量比', [0.7]) # 0.35可以把钱用完，但客单价低
+    area_strategy.add_factor2('最小量比', [0.7])
     area_strategy.add_factor2('尾部资金', [300])
     area_strategy.add_factor2('买入比', [100])
     area_strategy.add_factor2('最大开板次数', [3])
@@ -125,12 +134,14 @@ if __name__ == '__main__':
     area_strategy.add_factor2('ma3向上系数', [0.88])
     area_strategy.add_factor2('ma5向上系数', [0.86])
     area_strategy.add_factor2('昨日一字板系数', [0.61])
-    area_strategy.add_factor2('最小可买金额', [50])
+    area_strategy.add_factor2('最小可买金额', [500])
     area_strategy.add_factor2('1日低位涨停板数打分', [0])
     area_strategy.add_factor2('3日低位涨停板数打分', [8])
     area_strategy.add_factor2('5日低位涨停板数打分', [0])
     area_strategy.add_factor2('7日低位涨停板数打分', [0])
     area_strategy.add_factor2('10日低位涨停板数打分', [0])
+    area_strategy.add_factor2('开盘最大回撤', [-11.5])
+    area_strategy.add_factor2('开盘价最小涨幅', [-4])
 
     area_strategy.set_max_use_money_per_day(3000)
     area_strategy.set_data_filter(lambda data: data['代码'][2:4] not in ['60', '00'])
