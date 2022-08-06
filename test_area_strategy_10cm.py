@@ -48,6 +48,14 @@ class AreaStrategy(Strategy):
                 data['打分'] = 0
                 continue
 
+            if data['开盘最大回撤'] < self.cm.get_config_value('开盘最大回撤'):
+                data['打分'] = 0
+                continue
+
+            if data['开盘价涨幅'] < self.cm.get_config_value('开盘价最小涨幅'):
+                data['打分'] = 0
+                continue
+
             data['打分'] = data['平均面积']
 
             if data['1日涨停板数'] > 0:
@@ -90,7 +98,8 @@ if __name__ == '__main__':
                                   '买入量': float, '买入价': float,
                                   '交叉点': str, '总面积': float, '平均面积': float,
                                   '开板次数': int, '开板最大回撤': float, '最高点': float, '最低点': float,
-                                  '1日涨停板数': int, '3日涨停板数': int, '5日涨停板数': int, '7日涨停板数': int, '10日涨停板数': int
+                                  '1日涨停板数': int, '3日涨停板数': int, '5日涨停板数': int, '7日涨停板数': int, '10日涨停板数': int,
+                                  '开盘最大回撤': float
                                   },
                                  'mianji_stock_poll.js',
                                  {'time1': '09:33:00', 'time2': '09:53:00',
@@ -131,6 +140,8 @@ if __name__ == '__main__':
     area_strategy.add_factor2('5日低位涨停板数打分', [0])
     area_strategy.add_factor2('7日低位涨停板数打分', [3])
     area_strategy.add_factor2('10日低位涨停板数打分', [0])
+    area_strategy.add_factor2('开盘最大回撤', [-7])
+    area_strategy.add_factor2('开盘价最小涨幅', [-6])
 
     area_strategy.set_max_use_money_per_day(3000)
     area_strategy.set_data_filter(lambda data: data['代码'][2:4] in ['60', '00'])
