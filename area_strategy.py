@@ -18,6 +18,7 @@ class AreaStrategy(Strategy):
         for data in data_list:
             if data['买入量'] == 0:
                 data['打分'] = 0
+                data['淘汰原因'] = '买入量'
                 continue
 
             if not self.data_filter(data):
@@ -31,34 +32,42 @@ class AreaStrategy(Strategy):
 
             if data['量比'] < self.cm.get_config_value(tag + '最小量比'):
                 data['打分'] = 0
+                data['淘汰原因'] = '最小量比'
                 continue
 
             if data['开板次数'] > self.cm.get_config_value(tag + '最大开板次数'):
                 data['打分'] = 0
+                data['淘汰原因'] = '最大开板次数'
                 continue
 
             if data['开板最大回撤'] > self.cm.get_config_value(tag + '最大开板最大回撤'):
                 data['打分'] = 0
+                data['淘汰原因'] = '最大开板最大回撤'
                 continue
 
             if data['上市天数'] < self.cm.get_config_value(tag + '最小上市天数'):
                 data['打分'] = 0
+                data['淘汰原因'] = '最小上市天数'
                 continue
 
             if data['涨板打断次数'] > self.cm.get_config_value(tag + '最大断板次数'):
                 data['打分'] = 0
+                data['淘汰原因'] = '最大断板次数'
                 continue
 
             if data['可买金额'] < self.cm.get_config_value(tag + '最小可买金额') * 10000:
                 data['打分'] = 0
+                data['淘汰原因'] = '最小可买金额'
                 continue
 
             if data['开盘最大回撤'] < self.cm.get_config_value(tag + '开盘最大回撤'):
                 data['打分'] = 0
+                data['淘汰原因'] = '开盘最大回撤'
                 continue
 
             if data['开盘价涨幅'] < self.cm.get_config_value(tag + '开盘价最小涨幅'):
                 data['打分'] = 0
+                data['淘汰原因'] = '开盘价最小涨幅'
                 continue
 
             data['打分'] = data['平均面积']
@@ -116,7 +125,7 @@ class AreaStrategy(Strategy):
         total_money_10cm = self.max_use_money_per_day * (1 - self.cm.get_config_value('20cm资金比')) * 10000
         """if total_money_20cm > use_money_20cm:
             total_money_10cm += (total_money_20cm - use_money_20cm)"""
-        earn_money_10cm, use_money_10cm, left_money20cm = \
+        earn_money_10cm, use_money_10cm, left_money10cm = \
             self._count_stock_earn_money(
                 data_list_10cm, total_money_10cm, self.cm.get_config_value('10cm尾部资金') * 10000, normal_mode)
         total_earn_money += earn_money_10cm
@@ -124,14 +133,14 @@ class AreaStrategy(Strategy):
 
         if normal_mode:
             data_list.sort(key=lambda x: x['当日排名'], reverse=False)
-        return total_earn_money, total_use_money, left_money20cm
+        return total_earn_money, total_use_money, left_money10cm
 
 
 if __name__ == '__main__':
     area_strategy = AreaStrategy('area_strategy_30cm',
                                  'D:\\ts\\',
                                  'area_strategy_30cm.csv',
-                                 ['打分', '当日排名'],
+                                 ['打分', '当日排名', '淘汰原因'],
                                  '新面积策略股票池.csv',
                                  {'日期': str, '代码': str, '名称': str, '量比': float,
                                   '买入量': float, '买入价': float,
@@ -156,11 +165,11 @@ if __name__ == '__main__':
                                   '买入价', '卖出价', '卖出日期', '打分', '当日排名'],
                                  ['买入量'], 20220727, 300)
 
-    area_strategy.add_factor2('10cm涨停板数1打分', [1])
-    area_strategy.add_factor2('10cm涨停板数3打分', [1])
-    area_strategy.add_factor2('10cm涨停板数5打分', [3])
-    area_strategy.add_factor2('10cm涨停板数7打分', [0.18])
-    area_strategy.add_factor2('10cm涨停板数10打分', [13])
+    area_strategy.add_factor2('10cm涨停板数1打分', [0.3])
+    area_strategy.add_factor2('10cm涨停板数3打分', [0.9])
+    area_strategy.add_factor2('10cm涨停板数5打分', [3.0])
+    area_strategy.add_factor2('10cm涨停板数7打分', [0.28])
+    area_strategy.add_factor2('10cm涨停板数10打分', [12.6])
     area_strategy.add_factor2('10cm最小上市天数', [200])
     area_strategy.add_factor2('10cm最小量比', [0.35])
     area_strategy.add_factor2('10cm尾部资金', [450])
@@ -182,11 +191,11 @@ if __name__ == '__main__':
     area_strategy.add_factor2('10cm开盘最大回撤', [-7])
     area_strategy.add_factor2('10cm开盘价最小涨幅', [-6])
 
-    area_strategy.add_factor2('20cm涨停板数1打分', [10])
-    area_strategy.add_factor2('20cm涨停板数3打分', [4])
-    area_strategy.add_factor2('20cm涨停板数5打分', [0.07])
-    area_strategy.add_factor2('20cm涨停板数7打分', [4])
-    area_strategy.add_factor2('20cm涨停板数10打分', [7.5])
+    area_strategy.add_factor2('20cm涨停板数1打分', [10.4])
+    area_strategy.add_factor2('20cm涨停板数3打分', [3.6])
+    area_strategy.add_factor2('20cm涨停板数5打分', [0.01])
+    area_strategy.add_factor2('20cm涨停板数7打分', [3.6])
+    area_strategy.add_factor2('20cm涨停板数10打分', [7.7])
     area_strategy.add_factor2('20cm最小上市天数', [800])
     area_strategy.add_factor2('20cm最小量比', [0.7])
     area_strategy.add_factor2('20cm尾部资金', [300])  # 当买完一个股票后，资金不足300W时，就不继续买了，衡量资金利用率
