@@ -191,7 +191,8 @@ class Strategy:
                 data['卖出日期'] = sell_info['卖出日期']
 
                 data_list.append(data)
-            self.__preprocess_data(data_list)
+            self.preprocess_data(data_list)
+            self.__count_buy_amount(data_list)
             self.date_to_stock_data[date] = data_list
         return True
 
@@ -215,13 +216,14 @@ class Strategy:
     def __gen_factors(self):
         self.list_factors = self.cm.gen_factors()
 
-    def __preprocess_data(self, data_list):
-        use_money_per_stock = self.max_use_money_per_stock * 10000
-        # list_key_vol = list()
-        for idx, data in enumerate(data_list):
-            # list_key_vol.append((idx, data['量比']))
-            data['可买金额'] = data['计划买入金额'] = data['盈亏金额'] = data['盈亏比'] = 0
+    def preprocess_data(self, data_list):
+        pass
 
+    def __count_buy_amount(self, data_list):
+        use_money_per_stock = self.max_use_money_per_stock * 10000
+
+        for data in data_list:
+            data['可买金额'] = data['计划买入金额'] = data['盈亏金额'] = data['盈亏比'] = 0
             if data['买入价'] > 0 and data['买入量'] > 0:
                 data['可买金额'] = round(data['买入价'] * data['买入量'])
                 data['计划买入金额'] = data['可买金额'] * self.buy_vol_ratio / 100
@@ -231,11 +233,6 @@ class Strategy:
 
                 data['盈亏比'] = round((data['卖出价'] / data['买入价'] - 1) * 100, 2)
                 data['盈亏金额'] = round((data['卖出价'] - data['买入价']) * data['买入量'])
-
-        """list_key_vol.sort(key=lambda x: x[1])
-        len_list = len(list_key_vol)
-        for rank, value in enumerate(list_key_vol):
-            data_list[value[0]]['量比权重'] = (rank + 1) / len_list"""
 
     def __write_csv(self, data_list):
         if not self.fd:
