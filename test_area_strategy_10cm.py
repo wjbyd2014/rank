@@ -18,6 +18,7 @@ class AreaStrategy(Strategy):
         for data in data_list:
             if data['买入量'] == 0:
                 data['打分'] = 0
+                data['淘汰原因'] = '买入量'
                 continue
 
             if not self.data_filter(data):
@@ -26,34 +27,42 @@ class AreaStrategy(Strategy):
 
             if data['量比'] < self.cm.get_config_value('最小量比'):
                 data['打分'] = 0
+                data['淘汰原因'] = '最小量比'
                 continue
 
             if data['开板次数'] > self.cm.get_config_value('最大开板次数'):
                 data['打分'] = 0
+                data['淘汰原因'] = '最大开板次数'
                 continue
 
             if data['开板最大回撤'] > self.cm.get_config_value('最大开板最大回撤'):
                 data['打分'] = 0
+                data['淘汰原因'] = '最大开板最大回撤'
                 continue
 
             if data['上市天数'] < self.cm.get_config_value('最小上市天数'):
                 data['打分'] = 0
+                data['淘汰原因'] = '最小上市天数'
                 continue
 
             if data['涨板打断次数'] > self.cm.get_config_value('最大断板次数'):
                 data['打分'] = 0
+                data['淘汰原因'] = '最大断板次数'
                 continue
 
             if data['可买金额'] < self.cm.get_config_value('最小可买金额') * 10000:
                 data['打分'] = 0
+                data['淘汰原因'] = '最小可买金额'
                 continue
 
             if data['开盘最大回撤'] < self.cm.get_config_value('开盘最大回撤'):
                 data['打分'] = 0
+                data['淘汰原因'] = '开盘最大回撤'
                 continue
 
             if data['开盘价涨幅'] < self.cm.get_config_value('开盘价最小涨幅'):
                 data['打分'] = 0
+                data['淘汰原因'] = '开盘价最小涨幅'
                 continue
 
             data['打分'] = data['平均面积']
@@ -126,7 +135,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('最小量比', [0.35])
     area_strategy.add_factor2('尾部资金', [450])
     area_strategy.add_factor2('买入比', [100])
-    area_strategy.add_factor2('最大开板次数', [6])
+    area_strategy.add_factor2('最大开板次数', [5])
     area_strategy.add_factor2('最大开板最大回撤', [6.3])
     area_strategy.add_factor2('最高点系数', [0.47])
     area_strategy.add_factor2('最低点系数', [0.21])
