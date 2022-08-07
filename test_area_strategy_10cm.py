@@ -92,7 +92,7 @@ if __name__ == '__main__':
     area_strategy = AreaStrategy('area_strategy_10cm',
                                  'D:\\ts\\',
                                  'area_strategy_10cm.csv',
-                                 ['打分', '当日排名', '量比权重', '淘汰原因'],
+                                 ['打分', '当日排名', '淘汰原因'],
                                  '新面积策略股票池.csv',
                                  {'日期': str, '代码': str, '名称': str, '量比': float,
                                   '买入量': float, '买入价': float,
