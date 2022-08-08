@@ -64,12 +64,29 @@ begin
 
         低位涨停板 := 计算低位涨停板(stock_name, stock_code, day);
         assert(length(低位涨停板) = 5);
+
+        十日内阴线数 := 计算十日内阴线数(stock_name, stock_code);
     end
+
     return array(('名称':stock_name, '代码':stock_code, '上市天数':上市天数, 'ma3向上':ma3向上, 'ma5向上':ma5向上,
         '上涨起点日':上涨起点日, '涨板打断次数':涨板打断次数, '开盘价涨幅':开盘价涨幅, '昨日是否一字板':昨日是否一字板,
         '1日低位涨停板数':低位涨停板[0], '3日低位涨停板数':低位涨停板[1], '5日低位涨停板数':低位涨停板[2],
-        '7日低位涨停板数':低位涨停板[3], '10日低位涨停板数':低位涨停板[4]
+        '7日低位涨停板数':低位涨停板[3], '10日低位涨停板数':低位涨停板[4],
+        '十日内阴线数':十日内阴线数
         ));
+end
+
+function 计算十日内阴线数(stock_name, stock_code);
+begin
+    ret := 0;
+    for i := 1 to 10 do
+    begin
+        day_open := ref(open(), i);
+        day_close := ref(close(), i);
+        if day_open > day_close then
+            ret += 1;
+    end
+    return ret;
 end
 
 function 计算低位涨停板(stock_name, stock_code, day);
