@@ -70,6 +70,11 @@ class AreaStrategy(Strategy):
                 data['淘汰原因'] = '最大10日阴线数'
                 continue
 
+            if data['3日十字阴线极值'] > self.cm.get_config_value('最大3日十字阴线极值'):
+                data['打分'] = 0
+                data['淘汰原因'] = '最大3日十字阴线极值'
+                continue
+
             data['打分'] = data['平均面积']
 
             if data['1日涨停板数'] > 0:
@@ -124,7 +129,7 @@ if __name__ == '__main__':
                                   '开盘价涨幅': float, '昨日是否一字板': int,
                                   '1日低位涨停板数': int, '3日低位涨停板数': int, '5日低位涨停板数': int,
                                   '7日低位涨停板数': int, '10日低位涨停板数': int,
-                                  '10日阴线数': int
+                                  '10日阴线数': int, '3日十字阴线极值': float, '5日十字阴线极值': float, '10日十字阴线极值': float
                                   },
                                  'mianji_stock_info_day.js',
                                  {},
@@ -158,6 +163,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('开盘最大回撤', [-10.0])
     area_strategy.add_factor2('开盘价最小涨幅', [-3.6])
     area_strategy.add_factor2('最大10日阴线数', [7])
+    area_strategy.add_factor2('最大3日十字阴线极值', [100])
 
     area_strategy.set_max_use_money_per_day(3000)
     area_strategy.set_data_filter(lambda data: data['代码'][2:4] not in ['60', '00'])
