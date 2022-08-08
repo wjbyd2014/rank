@@ -70,6 +70,11 @@ class AreaStrategy(Strategy):
                 data['淘汰原因'] = '开盘价最小涨幅'
                 continue
 
+            if data['10日阴线数'] > self.cm.get_config_value(tag + '最大10日阴线数'):
+                data['打分'] = 0
+                data['淘汰原因'] = '最大10日阴线数'
+                continue
+
             data['打分'] = data['平均面积']
 
             if data['1日涨停板数'] > 0:
@@ -157,7 +162,8 @@ if __name__ == '__main__':
                                   '上涨起点日': str, '涨板打断次数': int,
                                   '开盘价涨幅': float, '昨日是否一字板': int,
                                   '1日低位涨停板数': int, '3日低位涨停板数': int, '5日低位涨停板数': int,
-                                  '7日低位涨停板数': int, '10日低位涨停板数': int
+                                  '7日低位涨停板数': int, '10日低位涨停板数': int,
+                                  '10日阴线数': int
                                   },
                                  'mianji_stock_info_day.js',
                                  {},
@@ -190,6 +196,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('10cm10日低位涨停板数打分', [0])
     area_strategy.add_factor2('10cm开盘最大回撤', [-6.8])
     area_strategy.add_factor2('10cm开盘价最小涨幅', [-6.3])
+    area_strategy.add_factor2('10cm最大10日阴线数', [6])
 
     area_strategy.add_factor2('20cm涨停板数1打分', [10.4])
     area_strategy.add_factor2('20cm涨停板数3打分', [3.6])
@@ -216,6 +223,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('20cm10日低位涨停板数打分', [0.9])
     area_strategy.add_factor2('20cm开盘最大回撤', [-10.0])
     area_strategy.add_factor2('20cm开盘价最小涨幅', [-3.6])
+    area_strategy.add_factor2('20cm最大10日阴线数', [7])
 
     area_strategy.add_factor2('20cm资金比', [0.5])
 
