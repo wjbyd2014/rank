@@ -65,18 +65,54 @@ begin
         低位涨停板 := 计算低位涨停板(stock_name, stock_code, day);
         assert(length(低位涨停板) = 5);
 
-        十日内阴线数 := 计算十日内阴线数(stock_name, stock_code);
+        十日阴线数 := 计算十日阴线数(stock_name, stock_code);
+        十字阴线极值 := 计算十字阴线极值(stock_name, stock_code);
     end
 
     return array(('名称':stock_name, '代码':stock_code, '上市天数':上市天数, 'ma3向上':ma3向上, 'ma5向上':ma5向上,
         '上涨起点日':上涨起点日, '涨板打断次数':涨板打断次数, '开盘价涨幅':开盘价涨幅, '昨日是否一字板':昨日是否一字板,
         '1日低位涨停板数':低位涨停板[0], '3日低位涨停板数':低位涨停板[1], '5日低位涨停板数':低位涨停板[2],
         '7日低位涨停板数':低位涨停板[3], '10日低位涨停板数':低位涨停板[4],
-        '十日内阴线数':十日内阴线数
+        '10日阴线数':十日阴线数,
+        '3日十字阴线极值':十字阴线极值[0],
+        '5日十字阴线极值':十字阴线极值[1],
+        '10日十字阴线极值':十字阴线极值[2]
         ));
 end
 
-function 计算十日内阴线数(stock_name, stock_code);
+function 计算十字阴线极值(stock_name, stock_code);
+begin
+    num5 := 0;
+    num3 := 0;
+    num := 0;
+    for i := 1 to 10 do
+    begin
+        if i = 4 then
+            num3 := num;
+        if i = 6 then
+            num5 := num;
+
+        昨日收盘价 := ref(close(), i + 1);
+        当日开盘价 := ref(open(), i);
+        当日收盘价 := ref(close(), i);
+        当日最高价 := ref(high(), i);
+        当日最低价 := ref(low(), i);
+
+        if 当日开盘价 <= 当日收盘价 then
+            continue;
+
+        日内跌幅 := count_ratio(当日开盘价, 当日收盘价);
+        最高价涨幅 := count_ratio(当日最高价, 昨日收盘价);
+        最低价涨幅 := count_ratio(当日最低价, 昨日收盘价);
+        日内振幅 := 最高价涨幅 - 最低价涨幅;
+        差值 := 日内振幅 - 日内跌幅;
+        if 差值 > num then
+            num := 差值;
+    end
+    return array(num3, num5, num);
+end
+
+function 计算十日阴线数(stock_name, stock_code);
 begin
     ret := 0;
     for i := 1 to 10 do
