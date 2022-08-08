@@ -209,8 +209,8 @@ if __name__ == '__main__':
     area_strategy.add_factor2('20cm涨停板数5打分', [0.1])
     area_strategy.add_factor2('20cm涨停板数7打分', [3.6])
     area_strategy.add_factor2('20cm涨停板数10打分', [7.7])
-    area_strategy.add_factor2('20cm最小上市天数', [600])
-    area_strategy.add_factor2('20cm最小量比', [0.35])
+    area_strategy.add_factor2('20cm最小上市天数', [450])
+    area_strategy.add_factor2('20cm最小量比', [0.3])
     area_strategy.add_factor2('20cm尾部资金', [300])  # 当买完一个股票后，资金不足300W时，就不继续买了，衡量资金利用率
     area_strategy.add_factor2('20cm买入比', [100])
     area_strategy.add_factor2('20cm最大开板次数', [3])
@@ -221,7 +221,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('20cmma3向上系数', [-4.8])
     area_strategy.add_factor2('20cmma5向上系数', [-0.3])
     area_strategy.add_factor2('20cm昨日一字板系数', [-7.6])
-    area_strategy.add_factor2('20cm最小可买金额', [0])  # 可买金额低于500W的直接跳过，衡量股票自身
+    area_strategy.add_factor2('20cm最小可买金额', [200])  # 可买金额低于500W的直接跳过，衡量股票自身
     area_strategy.add_factor2('20cm1日低位涨停板数打分', [0])
     area_strategy.add_factor2('20cm3日低位涨停板数打分', [8.4])
     area_strategy.add_factor2('20cm5日低位涨停板数打分', [3.1])
@@ -230,7 +230,7 @@ if __name__ == '__main__':
     area_strategy.add_factor2('20cm开盘最大回撤', [-10.0])
     area_strategy.add_factor2('20cm开盘价最小涨幅', [-3.6])
     area_strategy.add_factor2('20cm最大10日阴线数', [7])
-    area_strategy.add_factor2('20cm最大3日十字阴线极值', [100])
+    area_strategy.add_factor2('20cm最大3日十字阴线极值', [11.5])
 
     area_strategy.add_factor2('20cm资金比', [0.5])
 
