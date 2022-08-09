@@ -15,9 +15,12 @@ Begin
 
     大盘分钟线 := get_zz1000_data(day, time1, time2);
 
-    无涨停板股票列表 := array();
-    有涨停板股票列表 := array();
-    ret := array();
+    无涨停板股票列表1 := array();
+    无涨停板股票列表2 := array();
+    有涨停板股票列表1 := array();
+    有涨停板股票列表2 := array();
+    ret1 := array();
+    ret2 := array();
     stock_list := getbk('A股');
 
     stock_list::begin
@@ -137,17 +140,38 @@ Begin
             '最高点':最高点, '最低点':最低点, '开盘最大回撤':开盘最大回撤));
 
         if 涨停板数1 > 0 or 涨停板数3 > 0 or 涨停板数5 > 0 or 涨停板数7 > 0 or 涨停板数10 > 0 then
-            有涨停板股票列表 &= arr;
+        begin
+            if stock_code[3:4] = '60' or stock_code[3:4] = '00' then
+                有涨停板股票列表1 &= arr;
+            else
+                有涨停板股票列表2 &= arr;
+        end
         else
-            无涨停板股票列表 &= arr;
+        begin
+            if stock_code[3:4] = '60' or stock_code[3:4] = '00' then
+                无涨停板股票列表1 &= arr;
+            else
+                无涨停板股票列表2 &= arr;
+        end
     end
 
-    SortTableByField(无涨停板股票列表, '平均面积', 0);
-    ret &= 有涨停板股票列表;
-    if length(ret) < num then
+    SortTableByField(无涨停板股票列表1, '平均面积', 0);
+    SortTableByField(无涨停板股票列表2, '平均面积', 0);
+
+    ret1 &= 有涨停板股票列表1;
+    if length(ret1) < num then
     begin
-        ret &= 无涨停板股票列表[:num-length(ret)-1];
+        ret1 &= 无涨停板股票列表1[:num-length(ret1)-1];
     end
+
+    ret2 &= 有涨停板股票列表2;
+    if length(ret2) < num then
+    begin
+        ret2 &= 无涨停板股票列表2[:num-length(ret2)-1];
+    end
+    ret := array();
+    ret &= ret1;
+    ret &= ret2;
     return exportjsonstring(ret);
 End;
 
