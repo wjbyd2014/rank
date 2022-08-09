@@ -63,6 +63,7 @@ if __name__ == '__main__':
         data_del['action'] = '删除'
         writer.writerow(data_del)
 
+    compare_fields = ['实际买入金额', '实际盈亏金额', '打分']
     for diff_key in list_diff:
         data_new = ret_new[diff_key]
         data_del = ret_bak[diff_key]
@@ -70,22 +71,11 @@ if __name__ == '__main__':
         for field in fileds:
             data[field] = data_new[field]
 
-        data['计划买入金额'] = float(data_new['计划买入金额']) - float(data_del['计划买入金额'])
-        if data['计划买入金额'] >= 0:
-            data['计划买入金额'] = '增加' + str(data['计划买入金额'])
-        else:
-            data['计划买入金额'] = '减少' + str(data['计划买入金额'])
-
-        data['实际买入金额'] = float(data_new['实际买入金额']) - float(data_del['实际买入金额'])
-        if data['实际买入金额'] >= 0:
-            data['实际买入金额'] = '增加' + str(data['实际买入金额'])
-        else:
-            data['实际买入金额'] = '减少' + str(data['实际买入金额'])
-
-        data['实际盈亏金额'] = float(data_new['实际盈亏金额']) - float(data_del['实际盈亏金额'])
-        if data['实际盈亏金额'] > 0:
-            data['实际盈亏金额'] = '增加' + str(data['实际盈亏金额'])
-        else:
-            data['实际盈亏金额'] = '减少' + str(data['实际盈亏金额'])
+        for compare_field in compare_fields:
+            data[compare_field] = float(data_new[compare_field]) - float(data_del[compare_field])
+            if data[compare_field] > 0:
+                data[compare_field] = '增加' + str(data[compare_field])
+            elif data[compare_field] < 0:
+                data[compare_field] = '减少' + str(data[compare_field])
         writer.writerow(data)
     fd.close()
