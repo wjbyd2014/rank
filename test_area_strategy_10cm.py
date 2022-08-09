@@ -21,10 +21,6 @@ class AreaStrategy(Strategy):
                 data['淘汰原因'] = '买入量'
                 continue
 
-            if not self.data_filter(data):
-                data['打分'] = 0
-                continue
-
             if data['量比'] < self.cm.get_config_value('最小量比'):
                 data['打分'] = 0
                 data['淘汰原因'] = '最小量比'
@@ -145,7 +141,6 @@ if __name__ == '__main__':
     area_strategy.add_factor2('最小上市天数', [200])
     area_strategy.add_factor2('最小量比', [0.35])
     area_strategy.add_factor2('尾部资金', [450])
-    area_strategy.add_factor2('买入比', [100])
     area_strategy.add_factor2('最大开板次数', [5])
     area_strategy.add_factor2('最大开板最大回撤', [6.3])
     area_strategy.add_factor2('最高点系数', [0.5])
