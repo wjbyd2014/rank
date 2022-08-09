@@ -214,8 +214,9 @@ class Strategy:
                 data['卖出日期'] = sell_info['卖出日期']
 
                 data_list.append(data)
-            self.preprocess_data(data_list)
+
             self.__count_buy_amount(data_list)
+            self.process_data(data_list)
             self.date_to_stock_data[date] = data_list
         return True
 
@@ -239,7 +240,7 @@ class Strategy:
     def __gen_factors(self):
         self.list_factors = self.cm.gen_factors()
 
-    def preprocess_data(self, data_list):
+    def process_data(self, data_list):
         pass
 
     def __count_buy_amount(self, data_list):
