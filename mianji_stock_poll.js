@@ -7,6 +7,7 @@ Begin
     time3_str := '{time3}';
     time4_str := '{time4}';
     num := {num};
+    最小平均面积 := {min_avg_area};
 
     time1 := StrToTime(time1_str);
     time2 := StrToTime(time2_str);
@@ -78,11 +79,10 @@ Begin
         交叉点面积 := 计算交叉点和面积(stock_name, 时间线, 个股分钟线, 大盘分钟线);
         交叉点 := 交叉点面积[0];
         总面积 := 交叉点面积[1];
-
-        if 总面积 <= 0 then
-            continue;
-
         平均面积 := 交叉点面积[2];
+
+        if 平均面积 < 最小平均面积 then
+            continue;
 
         涨停板数1 := get_涨停板(stock_code, day, 1);
         涨停板数3 := get_涨停板(stock_code, day, 3);
@@ -322,18 +322,35 @@ end
 
 function 计算交叉点和面积(stock_name, 时间线, 个股分钟线, 大盘分钟线);
 begin
-    if 个股分钟线[20] <= 大盘分钟线[20] then
-        return array(0, 0, 0);
+    flag := 0;
+    if 个股分钟线[20] < 大盘分钟线[20] then
+        flag := -1;
+    else if 个股分钟线[20] > 大盘分钟线[20] then
+        flag := 1;
 
     交叉点 := 0;
     for i := 19 downto 0 do
     begin
         if 个股分钟线[i] < 大盘分钟线[i] then
         begin
-            交叉点 := i + 1;
-            break;
+            if flag >= 0 then
+            begin
+                交叉点 := i + 1;
+                break;
+            end
+        end
+        else if 个股分钟线[i] > 大盘分钟线[i] then
+        begin
+            if flag <= 0 then
+            begin
+                交叉点 := i + 1;
+                break;
+            end
         end
     end
+
+    if 交叉点 = 20 then
+        return array(0,0,0);
 
     面积 := 0;
     for j := 交叉点 to 19 do
@@ -360,6 +377,7 @@ begin
         return ret;
     end
 end
+
 function get_zz1000_data(day, time1, time2);
 begin
     with *,array(pn_Stock():'SH000852', pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
