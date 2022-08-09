@@ -3,10 +3,11 @@ from csv_cache import *
 from tinysoft import *
 from config_manager import *
 from strategy_utils import *
+import os
 
 
 class Strategy:
-    def __init__(self, name, work_dir, csv_file_name, csv_field_names,
+    def __init__(self, name, work_dir, csv_field_names,
                  stock_pool_file_name, stock_pool_fields, stock_pool_js_file_name, stock_pool_js_params,
                  stock_info_file_name, stock_info_fields, stock_info_js_file_name, stock_info_js_params,
                  priority_fields, skipped_csv_fields, begin_date, date_num):
@@ -47,7 +48,8 @@ class Strategy:
 
         self.skipped_csv_fields = skipped_csv_fields
         self.work_dir = work_dir
-        self.csv_file_name = csv_file_name
+        self.csv_file_name = name + '.csv'
+        self.bak_csv_file_name = name + '.bak.csv'
         self.ts_dates = None
         self.date_key = dict()
         self.cm = ConfigManager(work_dir + '回测.txt')
@@ -257,6 +259,10 @@ class Strategy:
 
     def __write_csv(self, data_list):
         if not self.fd:
+            if os.path.exists(self.work_dir + self.csv_file_name):
+                if os.path.exists(self.work_dir + self.bak_csv_file_name):
+                    os.remove(self.work_dir + self.bak_csv_file_name)
+                os.rename(self.work_dir + self.csv_file_name, self.work_dir + self.bak_csv_file_name)
             self.fd = open(self.work_dir + self.csv_file_name, mode='w', newline='')
             self.writer = csv.DictWriter(self.fd, fieldnames=self.csv_field_names)
             self.writer.writeheader()
