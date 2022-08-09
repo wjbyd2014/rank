@@ -81,6 +81,12 @@ class Strategy:
     def set_max_use_money_per_day(self, value):
         self.max_use_money_per_day = value
 
+    def set_max_use_money_per_stock(self, value):
+        self.max_use_money_per_stock = value
+
+    def set_buy_vol_ratio(self, value):
+        self.buy_vol_ratio = value
+
     def run_in_normal_mode(self):
         if not self.__prepare():
             return
@@ -116,6 +122,18 @@ class Strategy:
         for factors in self.list_factors:
             num += 1
             self.cm.update_configs(factors)
+
+            value = self.cm.get_config_value('每日资金总量')
+            if value:
+                self.set_max_use_money_per_day(value)
+
+            value = self.cm.get_config_value('每只股票最大资金量')
+            if value:
+                self.set_max_use_money_per_stock(value)
+
+            value = self.cm.get_config_value('买入比')
+            if value:
+                self.set_buy_vol_ratio(value)
 
             total_earn_money = 0
             total_use_money = 0
@@ -229,7 +247,7 @@ class Strategy:
             data['可买金额'] = data['计划买入金额'] = data['盈亏金额'] = data['盈亏比'] = 0
             if data['买入价'] > 0 and data['买入量'] > 0:
                 data['可买金额'] = round(data['买入价'] * data['买入量'])
-                data['计划买入金额'] = data['可买金额'] * self.buy_vol_ratio / 100
+                data['计划买入金额'] = data['可买金额']
 
                 if data['计划买入金额'] > use_money_per_stock:
                     data['计划买入金额'] = use_money_per_stock
@@ -272,8 +290,7 @@ class Strategy:
         return self._count_stock_earn_money(
             data_list, self.max_use_money_per_day * 10000, self.cm.get_config_value('尾部资金') * 10000, normal_mode)
 
-    @staticmethod
-    def _count_stock_earn_money(data_list, total_money, retain_money, normal_mode):
+    def _count_stock_earn_money(self, data_list, total_money, retain_money, normal_mode):
         total_earn_money = 0
         total_use_money = 0
         left_money = total_money
@@ -284,6 +301,8 @@ class Strategy:
                     data['实际买入金额'] = left_money
                 else:
                     data['实际买入金额'] = data['计划买入金额']
+
+                data['实际买入金额'] *= self.buy_vol_ratio / 100
 
                 if data['代码'][0:2] == 'SH':
                     service_fee = 上交所手续费
