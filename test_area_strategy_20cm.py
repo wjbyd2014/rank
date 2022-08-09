@@ -2,11 +2,11 @@ from strategy import *
 
 
 class AreaStrategy(Strategy):
-    def __init__(self, name, work_dir, csv_file_name, csv_field_names,
+    def __init__(self, name, work_dir, csv_field_names,
                  stock_pool_file_name, stock_pool_fields, stock_pool_js_file_name, stock_pool_js_params,
                  stock_info_file_name, stock_info_fields, stock_info_js_file_name, stock_info_js_params,
                  priority_fields, skipped_csv_fields, begin_date, date_num):
-        super().__init__(name, work_dir, csv_file_name, csv_field_names,
+        super().__init__(name, work_dir, csv_field_names,
                          stock_pool_file_name, stock_pool_fields, stock_pool_js_file_name, stock_pool_js_params,
                          stock_info_file_name, stock_info_fields, stock_info_js_file_name, stock_info_js_params,
                          priority_fields, skipped_csv_fields, begin_date, date_num)
@@ -110,7 +110,6 @@ class AreaStrategy(Strategy):
 if __name__ == '__main__':
     area_strategy = AreaStrategy('area_strategy_20cm',
                                  'D:\\ts\\',
-                                 'area_strategy_20cm.csv',
                                  ['打分', '当日排名', '淘汰原因'],
                                  '新面积策略股票池.csv',
                                  {'日期': str, '代码': str, '名称': str, '量比': float,
