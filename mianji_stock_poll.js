@@ -84,11 +84,12 @@ Begin
         if 平均面积 < 最小平均面积 then
             continue;
 
-        涨停板数1 := get_涨停板(stock_code, day, 1);
-        涨停板数3 := get_涨停板(stock_code, day, 3);
-        涨停板数5 := get_涨停板(stock_code, day, 5);
-        涨停板数7 := get_涨停板(stock_code, day, 7);
-        涨停板数10 := get_涨停板(stock_code, day, 10);
+        涨停板数 := get_涨停板(stock_code, day);
+        涨停板数1 := 涨停板数[0];
+        涨停板数3 := 涨停板数[1];
+        涨停板数5 := 涨停板数[2];
+        涨停板数7 := 涨停板数[3];
+        涨停板数10 := 涨停板数[4];
 
         买入价 := 计算买入价(stock_name, stock_code, day, 今日涨停价, time3, time4);
 
@@ -363,18 +364,52 @@ begin
     return array(交叉时间, floatn(面积, 2), 平均面积);
 end
 
-function get_涨停板(stock_code, day, num);
+function get_涨停板(stock_code, day);
 begin
-    with *,array(pn_Stock():stock_code) do
+    num1 := 0;
+    num3 := 0;
+    num5 := 0;
+    num7 := 0;
+    num10 := 0;
+
+    num := 0;
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
     begin
         ret := 0;
-        for i := 1 to num do
+        for i := 1 to 10 do
         begin
             one_day := StockEndTPrevNDay(day, i);
-            if StockIsZt(one_day) then
-                ret += 1;
+            if stock_code[3:4] = '60' or stock_code[3:4] = '00' then
+            begin
+                if StockIsZt(one_day) then
+                    num += 1;
+            end
+            else
+            begin
+                day_zf1 := ref(close(), i);
+                day_zf2 := ref(close(), i+1);
+                day_zf := count_ratio(day_zf1, day_zf2);
+                if StockIsZt(one_day) then
+                    num += 2;
+                else if day_zf >= 15 then
+                    num += 1.5;
+
+                else if day_zf >= 10 then
+                    num += 1;
+            end
+
+            if i = 1 then
+                num1 := num;
+            else if i = 3 then
+                num3 := num;
+            else if i = 5 then
+                num5 := num;
+            else if i = 7 then
+                num7 := num;
+            else if i = 10 then
+                num10 := num;
         end
-        return ret;
+        return array(num1, num3, num5, num7, num10);
     end
 end
 
