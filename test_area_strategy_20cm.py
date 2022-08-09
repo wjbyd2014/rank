@@ -21,10 +21,6 @@ class AreaStrategy(Strategy):
                 data['淘汰原因'] = '买入量'
                 continue
 
-            if not self.data_filter(data):
-                data['打分'] = 0
-                continue
-
             if data['量比'] < self.cm.get_config_value('最小量比'):
                 data['打分'] = 0
                 data['淘汰原因'] = '最小量比'
