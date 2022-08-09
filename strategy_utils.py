@@ -45,7 +45,7 @@ def draw_earn_money(day_earn_money, work_dir, title, show_picture):
 
 
 def draw_list_earn_money(list_day_earn_money, legends, work_dir, title, show_picture):
-    assert(len(list_day_earn_money) == len(legends))
+    assert (len(list_day_earn_money) == len(legends))
 
     ymax = ymin = None
     xmax = xmin = None
@@ -102,3 +102,21 @@ def draw_list_earn_money(list_day_earn_money, legends, work_dir, title, show_pic
         f = plt.gcf()  # 获取当前图像
         path = work_dir + '{}.png'.format(title)
         f.savefig(path)
+
+
+def fit_transform(data_list):
+    max_value = max(data_list)
+    min_value = min(data_list)
+    diff = max_value - min_value
+    ret = list()
+    for data in data_list:
+        ret.append((data - min_value) / diff)
+    return ret
+
+
+if __name__ == '__main__':
+    arr = fit_transform([1, 2, 4, 2])
+    assert arr[0] == 0
+    assert arr[1] == 1 / 3
+    assert arr[2] == 1
+    assert arr[3] == 1 / 3
