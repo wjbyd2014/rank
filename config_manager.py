@@ -26,7 +26,7 @@ class ConfigManager:
         return ret
 
     def get_config_value(self, config_name):
-        return self.config_values[config_name]
+        return self.config_values.get(config_name, None)
 
     def update_configs(self, list_config_values):
         assert (len(list_config_values) == len(self.config_values))
