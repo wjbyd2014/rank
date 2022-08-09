@@ -173,6 +173,9 @@ class Strategy:
 
             data_list = list()
             for data in stock_data:
+                if not self.data_filter(data):
+                    continue
+
                 if self.stock_info_cache:
                     stock_info = self.stock_info_cache.get(data['key'])
                     if not stock_info:
@@ -241,9 +244,6 @@ class Strategy:
             self.writer.writeheader()
 
         for data in data_list:
-            if not self.data_filter(data):
-                continue
-
             for key in self.skipped_csv_fields:
                 data.pop(key)
 
