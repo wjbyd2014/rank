@@ -215,8 +215,9 @@ class Strategy:
 
                 data_list.append(data)
 
+            self.pre_process_data(data_list)
             self.__count_buy_amount(data_list)
-            self.process_data(data_list)
+            self.post_process_data(data_list)
             self.date_to_stock_data[date] = data_list
         return True
 
@@ -240,7 +241,10 @@ class Strategy:
     def __gen_factors(self):
         self.list_factors = self.cm.gen_factors()
 
-    def process_data(self, data_list):
+    def pre_process_data(self, data_list):
+        pass
+
+    def post_process_data(self, data_list):
         pass
 
     def __count_buy_amount(self, data_list):
