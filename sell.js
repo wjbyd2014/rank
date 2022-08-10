@@ -2,7 +2,6 @@ Function cs();
 Begin
     begin_day := IntToDate({day});
     begin_time := '{time}';
-    point := {point};
 
     ret := array();
     stock_list := getbk('A股');
@@ -25,7 +24,7 @@ Begin
         卖出 := 计算卖出(stock_name, stock_code, day, begin_time);
         assert(卖出[0] <> 0);
         arr := array(('名称':stock_name, '代码':stock_code,
-            '卖出价':floatn(卖出[0] * (1 + point / 100), 3), '卖出日期':卖出[1], '卖出时间':卖出[2]));
+            '卖出价':卖出[0], '卖出日期':卖出[1], '卖出时间':卖出[2]));
         ret &= arr;
     end
     return exportjsonstring(ret);
