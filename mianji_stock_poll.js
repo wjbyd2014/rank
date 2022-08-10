@@ -371,7 +371,7 @@ begin
     num5 := 0;
     num7 := 0;
     num10 := 0;
-
+    
     num := 0;
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
     begin
@@ -386,18 +386,24 @@ begin
             end
             else
             begin
-                day_zf1 := ref(close(), i);
-                day_zf2 := ref(close(), i+1);
-                day_zf := count_ratio(day_zf1, day_zf2);
                 if StockIsZt(one_day) then
                     num += 2;
-                else if day_zf >= 15 then
-                    num += 1.5;
-
-                else if day_zf >= 10 then
-                    num += 1;
+                else
+                begin
+                    day_zf1 := ref(close(), i);
+                    day_zf2 := ref(close(), i+1);
+                    if day_zf1 > 0 and day_zf2 = 0 then
+                        day_zf := stockzf3();
+                    else
+                        day_zf := count_ratio(day_zf1, day_zf2);
+                        
+                    if day_zf >= 15 then
+                        num += 1.5;
+                    else if day_zf >= 10 then
+                        num += 1;
+                end
             end
-
+            
             if i = 1 then
                 num1 := num;
             else if i = 3 then
@@ -438,6 +444,8 @@ end
 
 function count_ratio(value1, value2);
 begin
+    if value2 = 0 then
+        return 0;
     return floatn((value1 / value2 - 1) * 100, 3);
 end
 
