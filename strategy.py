@@ -26,6 +26,7 @@ class Strategy:
                                                       stock_pool_file_name)
         self.csv_field_names += self.stock_pool_cache.keys()
 
+        self.stock_info_cache = None
         if stock_info_file_name:
             self.stock_info_cache = ReadWriteDateKeyCsvCache('stock_info_cache', work_dir,
                                                              stock_info_fields,
