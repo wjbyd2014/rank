@@ -12,7 +12,7 @@ def parse_csv(file_name):
     with open(file_name, mode='r', newline='') as csv_file:
         reader = csv.DictReader(csv_file)
         for row in reader:
-            if row['实际买入金额'] == '0':
+            if float(row['实际买入金额']) == 0:
                 continue
 
             data = {}
@@ -24,26 +24,26 @@ def parse_csv(file_name):
 
 if __name__ == '__main__':
     work_dir = 'D://ts//'
-    new_file = work_dir + 'area_strategy_10cm.csv'
-    bak_file = work_dir + 'area_strategy_10cm.bak.csv'
+    new_file = work_dir + 'area_strategy_20cm.csv'
+    bak_file = work_dir + 'area_strategy_20cm.bak.csv'
     result_file = work_dir + 'diff.csv'
 
     ret_new = parse_csv(new_file)
-    ret_bak = parse_csv(bak_file)
+    ret_old = parse_csv(bak_file)
 
     list_add = []
     list_del = []
     list_diff = []
     for key in ret_new:
-        if key not in ret_bak:
+        if key not in ret_old:
             list_add.append(key)
-        elif key in ret_bak:
+        elif key in ret_old:
             data_new = ret_new[key]
-            data_bak = ret_bak[key]
-            if ret_new[key] != ret_bak[key]:
+            data_bak = ret_old[key]
+            if ret_new[key] != ret_old[key]:
                 list_diff.append(key)
 
-    for key in ret_bak:
+    for key in ret_old:
         if key not in ret_new:
             list_del.append(key)
 
@@ -59,23 +59,27 @@ if __name__ == '__main__':
         writer.writerow(data_new)
 
     for del_key in list_del:
-        data_del = ret_bak[del_key]
+        data_del = ret_old[del_key]
         data_del['action'] = '删除'
         writer.writerow(data_del)
 
-    compare_fields = ['实际买入金额', '实际盈亏金额', '打分']
+    compare_fields = ['实际买入金额', '实际盈亏金额', '打分', '当日排名']
     for diff_key in list_diff:
         data_new = ret_new[diff_key]
-        data_del = ret_bak[diff_key]
+        data_del = ret_old[diff_key]
         data = {'action': '修改'}
         for field in fileds:
             data[field] = data_new[field]
 
         for compare_field in compare_fields:
-            data[compare_field] = float(data_new[compare_field]) - float(data_del[compare_field])
-            if data[compare_field] > 0:
-                data[compare_field] = '增加' + str(data[compare_field])
-            elif data[compare_field] < 0:
-                data[compare_field] = '减少' + str(data[compare_field])
+            if compare_field == '当日排名':
+                diff = float(data_new[compare_field]) - float(data_del[compare_field])
+            else:
+                diff = int(data_new[compare_field]) - int(data_del[compare_field])
+            if diff > 0:
+                data[compare_field] = '增加' + str(diff)
+            elif diff < 0:
+                data[compare_field] = '减少' + str(diff)
+
         writer.writerow(data)
     fd.close()
