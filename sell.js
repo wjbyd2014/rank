@@ -52,7 +52,7 @@ begin
         with *,array(pn_Stock():stock_code, pn_rate():2, pn_rateday():day) do
         begin
             last_close := stockclose(StockEndTPrevNDay(day, 1));
-            last_day := DateToStr(StockEndTPrevNDay(day, 1));
+            last_day := DateToStr(day);
             return array(last_close, last_day, begin_time);
         end
     end
@@ -60,12 +60,13 @@ begin
     sell_day := 0;
     sell_time := 0;
     str_day := DateToStr(day);
-
+    
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
     begin
         当日涨停价 := StockZtClose(day);
+        当日跌停价 := StockDtClose(day);
     end
-
+        
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_1m()) do
     begin
         data := select
@@ -73,10 +74,10 @@ begin
         ["close"]
         from markettable datekey day+StrToTime(begin_time) to day+0.99999 of DefaultStockID() end;
     end
-
+    
     for idx in data do
     begin
-        if data[idx]['close'] <> 当日涨停价 then
+        if data[idx]['close'] <> 当日涨停价 and data[idx]['close'] <> 当日跌停价 then
         begin
             sell_price := data[idx]['close'];
             sell_day := str_day;
