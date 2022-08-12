@@ -31,7 +31,7 @@ if __name__ == '__main__':
     area_strategy = Strategy10cm('10cm追板策略',
                                  'D:\\ts\\',
                                  ['打分', '当日排名', '淘汰原因'],
-                                 '10cm追板策略股票池.csv',
+                                 '追板策略股票池.csv',
                                  {'日期': str, '代码': str, '名称': str,
                                   '买入价': float, '买入时间': str, '买入量': float,
                                   '1日涨停数': int, '2日涨停数': int, '3日涨停数': int, '5日涨停数': int,
