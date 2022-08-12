@@ -57,7 +57,10 @@ function 计算最高价(stock_name, stock_code, day);
 begin
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
     begin
-        data := ref(nday(30, '时间', datetimetostr(sp_time()), '当日高价',high()), 1);;
+        data := ref(nday(30, '时间', datetimetostr(sp_time()), '当日高价',high()), 1);
+        if data = 0 then
+            return array(0, 0, 0, 0, 0, 0);
+
         data_high := data[:, '当日高价'];
     end
 
