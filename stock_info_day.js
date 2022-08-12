@@ -67,6 +67,8 @@ begin
 
         十日阴线数 := 计算十日阴线数(stock_name, stock_code);
         十字阴线极值 := 计算十字阴线极值(stock_name, stock_code);
+
+        连扳数 := 计算连扳(stock_name, stock_code, day);
     end
 
     return array(('名称':stock_name, '代码':stock_code, '上市天数':上市天数, 'ma3向上':ma3向上, 'ma5向上':ma5向上,
@@ -76,8 +78,26 @@ begin
         '10日阴线数':十日阴线数,
         '3日十字阴线极值':十字阴线极值[0],
         '5日十字阴线极值':十字阴线极值[1],
-        '10日十字阴线极值':十字阴线极值[2]
+        '10日十字阴线极值':十字阴线极值[2],
+        '连扳数':连扳数
         ));
+end
+
+function 计算连扳(stock_name, stock_code, day);
+begin
+    ret := 0;
+    i := 1;
+    while True do
+    begin
+        if StockIsZt(StockEndTPrevNDay(day, i)) then
+        begin
+            ret += 1;
+            i += 1;
+        end
+        else
+            break;
+    end
+    return ret;
 end
 
 function 计算十字阴线极值(stock_name, stock_code);
