@@ -35,7 +35,10 @@ if __name__ == '__main__':
                                  {'日期': str, '代码': str, '名称': str,
                                   '买入价': float, '买入时间': str, '买入量': float,
                                   '1日涨停数': int, '2日涨停数': int, '3日涨停数': int, '5日涨停数': int,
-                                  '7日涨停数': int, '10日涨停数': int, '15日涨停数': int, '30日涨停数': int
+                                  '7日涨停数': int, '10日涨停数': int, '15日涨停数': int, '30日涨停数': int,
+                                  '3日最高价': float, '5日最高价': float, '7日最高价': float, '10日最高价': float,
+                                  '15日最高价': float, '30日最高价': float,
+                                  '3日涨幅': float, '5日涨幅': float, '7日涨幅': float
                                   },
                                  'zhuiban10cm.js',
                                  {},
