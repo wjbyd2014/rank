@@ -114,9 +114,14 @@ def fit_transform(data_list):
     return ret
 
 
+def count_ratio(v1, v2):
+    return round((v1 / v2 - 1) * 100, 2)
+
+
 if __name__ == '__main__':
     arr = fit_transform([1, 2, 4, 2])
     assert arr[0] == 0
     assert arr[1] == 1 / 3
     assert arr[2] == 1
     assert arr[3] == 1 / 3
+    assert count_ratio(1.2, 1.4) == -14.29
