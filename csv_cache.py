@@ -164,7 +164,11 @@ class ReadWriteDateCsvCache:
             for data in ts_data:
                 data['key'] = date_str + '|' + data['代码']
                 data['日期'] = date_str
-                self.writer.writerow(data)
+
+                data_to_write = {}
+                for field in ['key'] + self.keys():
+                    data_to_write[field] = data[field]
+                self.writer.writerow(data_to_write)
             self.cache[date] = ts_data
             return ts_data
 
