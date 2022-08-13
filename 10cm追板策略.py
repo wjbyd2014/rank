@@ -40,7 +40,7 @@ if __name__ == '__main__':
                                   '15日最高价': float, '30日最高价': float,
                                   '3日涨幅': float, '5日涨幅': float, '7日涨幅': float
                                   },
-                                 'zhuiban10cm.js',
+                                 'zhuiban.js',
                                  {},
                                  '每日股票信息.csv',
                                  {'名称': str, '代码': str, '上市天数': float, 'ma3向上': int, 'ma5向上': int,
@@ -48,7 +48,8 @@ if __name__ == '__main__':
                                   '开盘价涨幅': float, '昨日是否一字板': int,
                                   '1日低位涨停板数': int, '3日低位涨停板数': int, '5日低位涨停板数': int,
                                   '7日低位涨停板数': int, '10日低位涨停板数': int,
-                                  '10日阴线数': int, '3日十字阴线极值': float, '5日十字阴线极值': float, '10日十字阴线极值': float
+                                  '10日阴线数': int, '3日十字阴线极值': float, '5日十字阴线极值': float, '10日十字阴线极值': float,
+                                  '连扳数': int
                                   },
                                  'stock_info_day.js',
                                  {},
