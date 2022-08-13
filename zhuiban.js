@@ -35,8 +35,9 @@ Begin
                 '买入价涨幅30':count_ratio(买入[0], 最高价[5]),
                 '3日涨幅':涨幅[0], '5日涨幅':涨幅[1], '7日涨幅':涨幅[2],
                 '1日涨停数':涨停[0], '2日涨停数':涨停[1], '3日涨停数':涨停[2],
-                '5日涨停数':涨停[3], '7日涨停数':涨停[4], '10日涨停数':涨停[5],
-                '15日涨停数':涨停[6], '30日涨停数':涨停[7]));
+                '4日涨停数':涨停[3], '5日涨停数':涨停[4], '6日涨停数':涨停[5],
+                '7日涨停数':涨停[6], '10日涨停数':涨停[7],
+                '15日涨停数':涨停[8], '30日涨停数':涨停[9]));
     end;
     return exportjsonstring(ret);
 End;
@@ -142,7 +143,9 @@ begin
     num1 := 0;
     num2 := 0;
     num3 := 0;
+    num4 := 0;
     num5 := 0;
+    num6 := 0;
     num7 := 0;
     num10 := 0;
     num15 := 0;
@@ -164,8 +167,12 @@ begin
                 num2 := num;
             else if i = 3 then
                 num3 := num;
+            else if i = 4 then
+                num4 := num;
             else if i = 5 then
                 num5 := num;
+            else if i = 6 then
+                num6 := num;
             else if i = 7 then
                 num7 := num;
             else if i = 10 then
@@ -175,7 +182,7 @@ begin
             else if i = 30 then
                 num30 := num;
         end
-        return array(num1, num2, num3, num5, num7, num10, num15, num30);
+        return array(num1, num2, num3, num4, num5, num6, num7, num10, num15, num30);
     end
 end
 
