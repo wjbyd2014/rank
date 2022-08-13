@@ -69,6 +69,8 @@ begin
         十字阴线极值 := 计算十字阴线极值(stock_name, stock_code);
 
         连扳数 := 计算连扳(stock_name, stock_code, day);
+
+        十日最大两个天量之和 := 计算天量(stock_name, stock_code, day);
     end
 
     return array(('名称':stock_name, '代码':stock_code, '上市天数':上市天数, 'ma3向上':ma3向上, 'ma5向上':ma5向上,
@@ -79,8 +81,22 @@ begin
         '3日十字阴线极值':十字阴线极值[0],
         '5日十字阴线极值':十字阴线极值[1],
         '10日十字阴线极值':十字阴线极值[2],
-        '连扳数':连扳数
+        '连扳数':连扳数,
+        '10日最大两个天量之和':十日最大两个天量之和
         ));
+end
+
+function 计算天量(stock_name, stock_code, day);
+begin
+    data := ref(nday(10, '时间', datetimetostr(sp_time()), '成交额',amount()), 1);
+
+    if data = 0 or length(data) < 2 then
+        return 0;
+
+    data_amount := data[:, '成交额'];
+    sortarray(data_amount, False);
+    top2 := data_amount[0] + data_amount[1];
+    return int(top2 / 100000000);
 end
 
 function 计算连扳(stock_name, stock_code, day);
