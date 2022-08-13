@@ -6,6 +6,10 @@ from strategy_utils import *
 import os
 
 
+def sort_data_list(data_list):
+    data_list.sort(key=lambda x: x['打分'], reverse=True)
+
+
 class Strategy:
     def __init__(self, name, work_dir, csv_field_names,
                  stock_pool_file_name, stock_pool_fields, stock_pool_js_file_name, stock_pool_js_params,
@@ -65,6 +69,7 @@ class Strategy:
         self.buy_vol_ratio = 100
         self.begin_date = begin_date
         self.date_num = date_num
+        self.sort_data_list = sort_data_list
 
     def __del__(self):
         if self.fd:
@@ -89,6 +94,9 @@ class Strategy:
 
     def set_buy_vol_ratio(self, value):
         self.buy_vol_ratio = value
+
+    def set_sort_data_list(self, func):
+        self.sort_data_list = func
 
     def run_in_normal_mode(self):
         if not self.__prepare():
@@ -274,16 +282,18 @@ class Strategy:
             self.writer.writeheader()
 
         for data in data_list:
-            for key in self.skipped_csv_fields:
-                data.pop(key)
+            data_to_write = {}
+            for field in self.csv_field_names:
+                if field not in self.skipped_csv_fields:
+                    data_to_write[field] = data.get(field, '')
 
-            data['买入价'] = round(data['买入价'], 3)
-            data['可买金额'] = round(data['可买金额'] / 10000, 2)
-            data['盈亏金额'] = round(data['盈亏金额'] / 10000, 2)
-            data['计划买入金额'] = round(data['计划买入金额'] / 10000, 2)
-            data['实际买入金额'] = round(data['实际买入金额'] / 10000, 2)
-            data['实际盈亏金额'] = round(data['实际盈亏金额'] / 10000, 2)
-            self.writer.writerow(data)
+            data_to_write['买入价'] = round(data_to_write['买入价'], 3)
+            data_to_write['可买金额'] = round(data_to_write['可买金额'] / 10000, 2)
+            data_to_write['盈亏金额'] = round(data_to_write['盈亏金额'] / 10000, 2)
+            data_to_write['计划买入金额'] = round(data_to_write['计划买入金额'] / 10000, 2)
+            data_to_write['实际买入金额'] = round(data_to_write['实际买入金额'] / 10000, 2)
+            data_to_write['实际盈亏金额'] = round(data_to_write['实际盈亏金额'] / 10000, 2)
+            self.writer.writerow(data_to_write)
 
     def __draw_picture1(self):
         draw_earn_money(self.earn_money_list[0], self.work_dir, self.name + '收益图', False)
@@ -296,7 +306,7 @@ class Strategy:
         pass
 
     def count_stock_area_earn_money(self, data_list, normal_mode):
-        data_list.sort(key=lambda x: x['打分'], reverse=True)
+        self.sort_data_list(data_list)
         for idx, data in enumerate(data_list):
             data['当日排名'] = idx + 1
         return self._count_stock_earn_money(
@@ -308,7 +318,7 @@ class Strategy:
         left_money = total_money
 
         for data in data_list:
-            if left_money > 0 and data['打分'] > 0:
+            if left_money > 0 and not data.get('淘汰原因'):
                 if data['计划买入金额'] > left_money:
                     data['实际买入金额'] = left_money
                 else:
