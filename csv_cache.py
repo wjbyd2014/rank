@@ -232,8 +232,12 @@ class ReadWriteDateKeyCsvCache:
 
             for data in ts_data:
                 data['key'] = key_[0] + '|' + data['代码']
-                self.writer.writerow(data)
-                self.cache[data['key']] = data
+
+                data_to_write = {}
+                for field in ['key'] + self.keys():
+                    data_to_write[field] = data[field]
+                self.writer.writerow(data_to_write)
+                self.cache[data['key']] = data_to_write
             return self.cache[key]
 
     def __del__(self):
@@ -263,5 +267,4 @@ class ReadWriteDateKeyCsvCache:
         test_key = date_str+'|SH600000'
         test_value = stock_info_cache.get(test_key)
         print(f'{test_key} = ', test_value)"""
-
 
