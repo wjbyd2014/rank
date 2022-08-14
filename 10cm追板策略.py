@@ -90,7 +90,7 @@ if __name__ == '__main__':
 
     zhuiban_strategy.add_factor2('尾部资金', [1])
     zhuiban_strategy.add_factor2('最大3日买入价涨幅', [6])
-    zhuiban_strategy.add_factor2('最小10日最大两个天量之和', [5])
+    zhuiban_strategy.add_factor2('最小10日最大两个天量之和', [10])
     zhuiban_strategy.add_factor2('买入比', [100])
     zhuiban_strategy.set_max_use_money_per_day(3000)
     zhuiban_strategy.set_data_filter(lambda data: data['代码'][2:4] in ['60', '00'])
