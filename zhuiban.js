@@ -23,7 +23,7 @@ Begin
 
         涨停 := 计算涨停板(stock_code, day);
         最高价 := 计算最高价(stock_name, stock_code, day);
-        涨幅 := 计算涨幅(stock_name, stock_code, day);
+        涨幅 := 计算涨幅(stock_name, stock_code, day, 70);
         买入量 := int(500 * 10000 / 买入[0]);
         ret &= array(('名称':stock_name, '代码':stock_code,
                 '买入价':买入[0], '买入时间':买入[1], '买入量':买入量,
@@ -33,29 +33,58 @@ Begin
                 '买入价涨幅10':count_ratio(买入[0], 最高价[3]),
                 '买入价涨幅15':count_ratio(买入[0], 最高价[4]),
                 '买入价涨幅30':count_ratio(买入[0], 最高价[5]),
-                '3日涨幅':涨幅[0], '5日涨幅':涨幅[1], '7日涨幅':涨幅[2],
                 '1日涨停数':涨停[0], '2日涨停数':涨停[1], '3日涨停数':涨停[2],
                 '4日涨停数':涨停[3], '5日涨停数':涨停[4], '6日涨停数':涨停[5],
                 '7日涨停数':涨停[6], '10日涨停数':涨停[7],
-                '15日涨停数':涨停[8], '30日涨停数':涨停[9]));
+                '15日涨停数':涨停[8], '30日涨停数':涨停[9],
+                '100日内出现5日涨幅超70':涨幅[0],
+                '200日内出现5日涨幅超70':涨幅[1]));
     end;
     return exportjsonstring(ret);
 End;
 
-function 计算涨幅(stock_name, stock_code, day);
+function 计算涨幅(stock_name, stock_code, day, ratio);
 begin
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
     begin
-        close1_ := ref(close(), 1);
-        close4_ := ref(close(), 4);
-        close6_ := ref(close(), 6);
-        close8_ := ref(close(), 8);
+        for i := 1 to 200 do
+        begin
+            close1 := ref(close(), i);
+            close2 := ref(close(), i + 1);
+            close3 := ref(close(), i + 2);
+            close4 := ref(close(), i + 3);
+            close5 := ref(close(), i + 4);
+            close6 := ref(close(), i + 5);
 
-        zf3 := count_ratio(close1_, close4_);
-        zf5 := count_ratio(close1_, close6_);
-        zf7 := count_ratio(close1_, close8_);
+            ratio3 := count_ratio(close1, close4);
+            ratio4 := count_ratio(close1, close5);
+            if ratio4 > ratio then
+            begin
+                if count_ratio(close2, close5) > ratio then
+                    ratio4 := 0
+            end
+
+            ratio5 := count_ratio(close1, close6);
+            if ratio5 > ratio then
+            begin
+                if count_ratio(close2, close6) > ratio then
+                    ratio5 := 0;
+                if count_ratio(close3, close6) > ratio then
+                    ratio5 := 0;
+            end
+
+            str_day := DateToStr(StockEndTPrevNDay(day, i));
+
+            if ratio3 > ratio or ratio4 > ratio or ratio5 > ratio then
+            begin
+                if i <= 100 then
+                    return array(1, 1);
+                else
+                    return array(0, 1);
+            end
+        end
     end
-    return array(zf3, zf5, zf7);
+    return array(0, 0);
 end
 
 function 计算最高价(stock_name, stock_code, day);
