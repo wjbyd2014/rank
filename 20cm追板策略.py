@@ -18,6 +18,8 @@ class Strategy20cm(Strategy):
 
     def select_stocks(self, data_list):
         for data in data_list:
+            data['淘汰原因'] = ''
+            
             if data['连扳数'] > self.cm.get_config_value('最大连扳数'):
                 data['淘汰原因'] = '连扳数'
                 continue
