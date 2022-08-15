@@ -34,6 +34,9 @@ begin
 
         今日开盘价 := open();
         开盘价涨幅 := count_ratio(今日开盘价, 昨日收盘价);
+        if 昨日收盘价 = 0 then
+            开盘价涨幅 := 0;
+            
         昨日是否一字板 := stockiszt2(StockEndTPrevNDay(day, 1));
 
         昨日3日均线 := ref(ma(close(), 3), 1);
