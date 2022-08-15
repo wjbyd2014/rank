@@ -36,7 +36,11 @@ begin
         开盘价涨幅 := count_ratio(今日开盘价, 昨日收盘价);
         if 昨日收盘价 = 0 then
             开盘价涨幅 := 0;
-            
+
+        开盘价涨停 := 0;
+        if 今日开盘价 = 今日涨停价 then
+            开盘价涨停 := 1;
+
         昨日是否一字板 := stockiszt2(StockEndTPrevNDay(day, 1));
 
         昨日3日均线 := ref(ma(close(), 3), 1);
@@ -69,14 +73,19 @@ begin
         assert(length(低位涨停板) = 5);
 
         十日阴线数 := 计算十日阴线数(stock_name, stock_code);
+
         十字阴线极值 := 计算十字阴线极值(stock_name, stock_code);
 
         连扳数 := 计算连扳(stock_name, stock_code, day);
 
         十日最大两个天量之和 := 计算天量(stock_name, stock_code, day);
+
+        昨天缩量大涨 := 计算缩量大涨(stock_name, stock_code, day, 1);
+        前天缩量大涨 := 计算缩量大涨(stock_name, stock_code, day, 2);
     end
 
     return array(('名称':stock_name, '代码':stock_code, '上市天数':上市天数, 'ma3向上':ma3向上, 'ma5向上':ma5向上,
+        '开盘价涨停': 开盘价涨停,
         '上涨起点日':上涨起点日, '涨板打断次数':涨板打断次数, '开盘价涨幅':开盘价涨幅, '昨日是否一字板':昨日是否一字板,
         '1日低位涨停板数':低位涨停板[0], '3日低位涨停板数':低位涨停板[1], '5日低位涨停板数':低位涨停板[2],
         '7日低位涨停板数':低位涨停板[3], '10日低位涨停板数':低位涨停板[4],
@@ -85,8 +94,29 @@ begin
         '5日十字阴线极值':十字阴线极值[1],
         '10日十字阴线极值':十字阴线极值[2],
         '连扳数':连扳数,
-        '10日最大两个天量之和':十日最大两个天量之和
+        '十日最大两个天量之和':十日最大两个天量之和,
+        '昨天缩量大涨': 昨天缩量大涨, '前天缩量大涨':前天缩量大涨
         ));
+end
+
+function 计算缩量大涨(stock_name, stock_code, day, num);
+begin
+    data := ref(nday(11, '时间', datetimetostr(sp_time()), '成交量', vol()), num);
+    if data = 0 or length(data) <> 11 then
+        return 0;
+
+    day_vol := data[10]['成交量'];
+    data_vol := data[0:9, '成交量'];
+    sortarray(data_vol, False);
+    avg_vol := (data_vol[0] + data_vol[1]) / 4;
+    if day_vol > avg_vol then
+        return 0;
+
+    day_close := ref(close(), num);
+    prev_day_close := ref(close(), num + 1);
+    if count_ratio(day_close, prev_day_close) < 10 then
+        return 0;
+    return 1;
 end
 
 function 计算天量(stock_name, stock_code, day);
