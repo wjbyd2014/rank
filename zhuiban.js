@@ -189,7 +189,7 @@ begin
         end
         buy_amount += data[idx]['amount'];
     end
-    return array(buy_price, buy_time, buy_amount);
+    return array(buy_price, buy_time, int(buy_amount/10000));
 end
 
 
