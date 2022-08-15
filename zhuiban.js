@@ -25,8 +25,9 @@ Begin
         最高价 := 计算最高价(stock_name, stock_code, day);
         涨幅 := 计算涨幅(stock_name, stock_code, day, 70);
         买入量 := int(500 * 10000 / 买入[0]);
+        首板新高 := 计算100日首板新高(stock_name, stock_code, day);
         ret &= array(('名称':stock_name, '代码':stock_code,
-                '买入价':买入[0], '买入时间':买入[1], '买入量':买入量,
+                '买入价':买入[0], '买入时间':买入[1], '当日已成交金额':买入[2], '买入量':买入量,
                 '买入价涨幅3':count_ratio(买入[0], 最高价[0]),
                 '买入价涨幅5':count_ratio(买入[0], 最高价[1]),
                 '买入价涨幅7':count_ratio(买入[0], 最高价[2]),
@@ -38,10 +39,33 @@ Begin
                 '7日涨停数':涨停[6], '10日涨停数':涨停[7],
                 '15日涨停数':涨停[8], '30日涨停数':涨停[9],
                 '100日内出现5日涨幅超70':涨幅[0],
-                '200日内出现5日涨幅超70':涨幅[1]));
+                '200日内出现5日涨幅超70':涨幅[1],
+                '100日首板新高':首板新高));
     end;
     return exportjsonstring(ret);
 End;
+
+function 计算100日首板新高(stock_name, stock_code, day);
+begin
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
+    begin
+        当日涨停价 := StockZtClose(day);
+        昨日涨停 := StockIsZt(StockEndTPrevNDay(day, 1));
+        if 昨日涨停 = 1 then
+            return 0;
+
+        data := ref(nday(100, '时间', datetimetostr(sp_time()), '收盘价',close()), 1);
+        if data = 0 or length(data) <> 100 then
+            return 0;
+
+        for i := 0 to 100 do
+        begin
+            if data[i]['收盘价'] >= 当日涨停价 then
+                return 0
+        end
+    end
+    return 1;
+end
 
 function 计算涨幅(stock_name, stock_code, day, ratio);
 begin
@@ -131,6 +155,7 @@ function 计算买入(stock_name, stock_code, day);
 begin
     buy_price := 0;
     buy_time := 0;
+    buy_amount := 0;
 
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
     begin
@@ -141,7 +166,8 @@ begin
     begin
         data := select
         TimeToStr(["date"]) as "时间",
-        ["close"]
+        ["close"],
+        ['amount']
         from markettable datekey day to day+0.99999 of DefaultStockID() end;
     end
 
@@ -151,7 +177,6 @@ begin
         if data[idx]['close'] <> 当日涨停价 then
         begin
             第一个非涨停价 := data[idx]['close'];
-            continue;
         end
         else
         begin
@@ -162,8 +187,9 @@ begin
                 break;
             end
         end
+        buy_amount += data[idx]['amount'];
     end
-    return array(buy_price, buy_time);
+    return array(buy_price, buy_time, buy_amount);
 end
 
 
