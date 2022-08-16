@@ -1,7 +1,7 @@
 import csv
 import os
 
-fileds = ['key', '日期', '代码', '名称', '可买金额', '盈亏金额', '盈亏比', '计划买入金额', '实际买入金额', '实际盈亏金额', '打分', '当日排名']
+fileds = ['key', '日期', '代码', '名称', '可买金额', '盈亏金额', '盈亏比', '计划买入金额', '实际买入金额', '实际盈亏金额', '当日排名']
 
 
 def parse_csv(file_name):
@@ -24,8 +24,8 @@ def parse_csv(file_name):
 
 if __name__ == '__main__':
     work_dir = 'D://ts//'
-    new_file = work_dir + 'area_strategy_20cm.csv'
-    bak_file = work_dir + 'area_strategy_20cm.bak.csv'
+    new_file = work_dir + '20cm追板策略.csv'
+    bak_file = work_dir + '20cm追板策略.bak.csv'
     result_file = work_dir + 'diff.csv'
 
     ret_new = parse_csv(new_file)
@@ -63,7 +63,7 @@ if __name__ == '__main__':
         data_del['action'] = '删除'
         writer.writerow(data_del)
 
-    compare_fields = ['实际买入金额', '实际盈亏金额', '打分', '当日排名']
+    compare_fields = ['实际买入金额', '实际盈亏金额', '当日排名']
     for diff_key in list_diff:
         data_new = ret_new[diff_key]
         data_del = ret_old[diff_key]
@@ -72,7 +72,7 @@ if __name__ == '__main__':
             data[field] = data_new[field]
 
         for compare_field in compare_fields:
-            if compare_field == '当日排名':
+            if compare_field != '当日排名':
                 diff = float(data_new[compare_field]) - float(data_del[compare_field])
             else:
                 diff = int(data_new[compare_field]) - int(data_del[compare_field])
