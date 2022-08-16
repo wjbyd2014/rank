@@ -99,29 +99,24 @@ class Strategy:
         self.sort_data_list = func
 
     def run_in_normal_mode(self):
-        if not self.__prepare():
-            return
-
         self.__run(False, False, True, True)
         self.__draw_picture1()
 
-    def run_in_linspace_compare_mode(self):
-        list_legends = []
-        for factors in self.cm.list_factors:
-            if len(factors) > 1:
-                list_legends = factors
+    def run_in_linspace_compare_mode(self, legends=None):
+        if legends:
+            list_legends = legends
+        else:
+            list_legends = []
+            for factors in self.cm.list_factors:
+                if len(factors) > 1:
+                    list_legends = factors
 
         assert list_legends
-        if not self.__prepare():
-            return
 
         self.__run(False, False, True, False)
         self.__draw_picture2(list_legends)
 
     def run_in_linspace_count_mode(self, do_print=False):
-        if not self.__prepare():
-            return
-
         self.__run(True, do_print, False, False)
 
     def __run(self, do_print1, do_print2, do_collect_earn_money, normal_mode):
@@ -187,13 +182,14 @@ class Strategy:
         print('max_earn_money_ratio = ', round(max_earn_money_ratio))
         print('max_earn_money = ', max_earn_money)
 
-    def __prepare(self):
+    def gen_factors(self):
         if not self.cm.list_factors:
             return False
 
-        self.__gen_dates()
         self.__gen_factors()
 
+    def load_data(self):
+        self.__gen_dates()
         for date in self.ts_dates:
             stock_data = self.stock_pool_cache.get(date, self.date_key[date])
             if not stock_data:
@@ -344,3 +340,6 @@ class Strategy:
                 if not normal_mode:
                     break
         return total_earn_money, total_use_money, left_money
+
+    def get_data(self):
+        return self.date_to_stock_data
