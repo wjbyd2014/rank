@@ -102,10 +102,8 @@ class Strategy:
         self.__run(False, False, True, True)
         self.__draw_picture1()
 
-    def run_in_linspace_compare_mode(self, legends=None):
-        if legends:
-            list_legends = legends
-        else:
+    def run_in_linspace_compare_mode(self, list_legends=None):
+        if not list_legends:
             list_legends = []
             for factors in self.cm.list_factors:
                 if len(factors) > 1:
