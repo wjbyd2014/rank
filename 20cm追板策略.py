@@ -20,13 +20,9 @@ class Strategy20cm(Strategy):
         for data in data_list:
             data['淘汰原因'] = ''
 
-            if data['连扳数'] > 2:
-                data['淘汰原因'] = '连扳数'
+            if data['连扳数'] < 2 and data['100日内出现5日涨幅超70'] == 1:
+                data['淘汰原因'] = '100日内出现5日涨幅超70'
                 continue
-            elif data['连扳数'] < 2:
-                if data['100日内出现5日涨幅超70']:
-                    data['淘汰原因'] = '100日内出现5日涨幅超70'
-                    continue
 
 
 def com_function(data1, data2):
@@ -87,6 +83,8 @@ if __name__ == '__main__':
     print(f'len_factors = {len_factors}')
 
     zhuiban_strategy.init()
+    zhuiban_strategy.load_data()
+    zhuiban_strategy.gen_factors()
 
     if zhuiban_strategy.len_factors() == 1:
         zhuiban_strategy.run_in_normal_mode()
