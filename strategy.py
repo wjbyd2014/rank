@@ -196,9 +196,6 @@ class Strategy:
 
             data_list = list()
             for data in stock_data:
-                if not self.data_filter(data):
-                    continue
-
                 if self.stock_info_cache:
                     stock_info = self.stock_info_cache.get(data['key'])
                     if not stock_info:
@@ -207,6 +204,9 @@ class Strategy:
 
                     for key in self.stock_info_cache.keys():
                         data[key] = stock_info[key]
+
+                if not self.data_filter(data):
+                    continue
 
                 sell_info = self.sell_cache.get(data['key'])
                 if not sell_info:
