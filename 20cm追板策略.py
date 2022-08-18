@@ -20,12 +20,12 @@ class Strategy20cm(Strategy):
         for data in data_list:
             data['淘汰原因'] = ''
 
-            """range_kai_pan_jia = self.cm.get_config_value('开盘价涨幅范围')
+            range_kai_pan_jia = self.cm.get_config_value('开盘价涨幅范围')
             if range_kai_pan_jia:
                 price_pair = range_kai_pan_jia.split('~')
 
                 if not float(price_pair[0]) <= data['开盘价涨幅'] <= float(price_pair[1]):
-                    data['淘汰原因'] = '开盘价涨幅'"""
+                    data['淘汰原因'] = '开盘价涨幅'
 
             if data['连扳数'] < 2 and data['100日内出现5日涨幅超70'] == 1:
                 data['淘汰原因'] = '100日内出现5日涨幅超70'
@@ -91,26 +91,8 @@ if __name__ == '__main__':
 
     zhuiban_strategy.init()
     zhuiban_strategy.load_data()
-
-    """list_kai_pan_jia = []
-    date_list_data = zhuiban_strategy.get_data()
-    for date, list_data in date_list_data.items():
-        for factor_data in list_data:
-            list_kai_pan_jia.append(factor_data['开盘价涨幅'])
-    list_kai_pan_jia.sort()
-    len_list = len(list_kai_pan_jia)
-    list_kai_pan_jia_factors = []
-    for i in range(10):
-        begin_idx = i * len_list // 10
-        if i == 9:
-            end_idx = len_list - 1
-        else:
-            end_idx = (i+1) * len_list // 10 - 1
-        print(f'begin_idx = {begin_idx}, end_idx = {end_idx}, num = {end_idx - begin_idx + 1}')
-        min_value = list_kai_pan_jia[begin_idx]
-        max_value = list_kai_pan_jia[end_idx]
-        list_kai_pan_jia_factors.append(f'{min_value}~{max_value}')
-    zhuiban_strategy.add_factor2('开盘价涨幅范围', list_kai_pan_jia_factors)"""
+    factors = ConfigManager.linspace2(zhuiban_strategy.get_data(), '开盘价涨幅', 10)
+    zhuiban_strategy.add_factor2('开盘价涨幅范围', factors)
 
     zhuiban_strategy.gen_factors()
 
