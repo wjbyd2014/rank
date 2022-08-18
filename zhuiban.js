@@ -17,6 +17,18 @@ Begin
         if not is_trade_day(day, stock_code) then
             continue;
 
+        with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
+        begin
+            昨日收盘价 := ref(close(), 1);
+            今日涨停价 := StockZtClose(day);
+        end
+
+        if stock_code[3:4] = '30' or stock_code[3:4] = '68' then
+        begin
+            if count_ratio(今日涨停价, 昨日收盘价) < 15 then
+                continue;
+        end
+
         买入 := 计算买入(stock_name, stock_code, day);
         if 买入[0] = 0 then
             continue;
@@ -24,7 +36,8 @@ Begin
         涨停 := 计算涨停板(stock_code, day);
         最高价 := 计算最高价(stock_name, stock_code, day);
         涨幅 := 计算涨幅(stock_name, stock_code, day, 70);
-        买入量 := int(500 * 10000 / 买入[0]);
+        买入金额 := 计算买入量(stock_name, stock_code, day, 6);
+        买入量 := int(买入金额/今日涨停价);
         首板新高 := 计算100日首板新高(stock_name, stock_code, day);
         ret &= array(('名称':stock_name, '代码':stock_code,
                 '买入价':买入[0], '买入时间':买入[1], '当日已成交金额':买入[2], '买入量':买入量,
@@ -44,6 +57,53 @@ Begin
     end;
     return exportjsonstring(ret);
 End;
+
+function 计算买入量(stock_name, stock_code, day, num);
+begin
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
+    begin
+        data := ref(nday(num, '时间', datetimetostr(sp_time()), '成交金额',amount()), 1);
+        if data = 0 or length(data) = 1 then
+            return 0;
+
+        num_amount := 0;
+        sum_amount := 0;
+        max_amount := 0;
+        mul_factor := 1;
+        j := 1;
+        连扳中 := 1;
+        for i := length(data) - 1 downto 0 do
+        begin
+            if stockiszt2(StockEndTPrevNDay(day, j)) = 0 then
+            begin
+                sum_amount += data[i]['成交金额'];
+                num_amount += 1;
+
+                if data[i]['成交金额'] > max_amount then
+                    max_amount := data[i]['成交金额'];
+            end
+
+            if 连扳中 then
+            begin
+                if StockIsZt(StockEndTPrevNDay(day, j)) then
+                    mul_factor *= 3;
+                else
+                    连扳中 := 0;
+            end
+            j += 1;
+        end
+    end
+
+    if num_amount = 0 then
+        return 0;
+
+    if num_amount > 1 then
+    begin
+        sum_amount -= max_amount;
+        num_amount -= 1;
+    end
+    return int(sum_amount / num_amount / 60 * mul_factor);
+end
 
 function 计算100日首板新高(stock_name, stock_code, day);
 begin
