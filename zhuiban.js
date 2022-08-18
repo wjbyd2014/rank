@@ -69,9 +69,7 @@ begin
         num_amount := 0;
         sum_amount := 0;
         max_amount := 0;
-        mul_factor := 1;
         j := 1;
-        连扳中 := 1;
         for i := length(data) - 1 downto 0 do
         begin
             if stockiszt2(StockEndTPrevNDay(day, j)) = 0 then
@@ -81,14 +79,6 @@ begin
 
                 if data[i]['成交金额'] > max_amount then
                     max_amount := data[i]['成交金额'];
-            end
-
-            if 连扳中 then
-            begin
-                if StockIsZt(StockEndTPrevNDay(day, j)) then
-                    mul_factor *= 3;
-                else
-                    连扳中 := 0;
             end
             j += 1;
         end
@@ -102,7 +92,7 @@ begin
         sum_amount -= max_amount;
         num_amount -= 1;
     end
-    return int(sum_amount / num_amount / 60 * mul_factor);
+    return int(sum_amount / num_amount);
 end
 
 function 计算100日首板新高(stock_name, stock_code, day);
