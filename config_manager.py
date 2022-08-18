@@ -16,13 +16,35 @@ class ConfigManager:
         self.config_values[name] = None
 
     @staticmethod
-    def 分箱(min_value, max_value, interval):
+    def linspace1(min_value, max_value, interval):
         ret = list()
         value = min_value
         while value <= max_value:
             ret.append(value)
             value += interval
             value = round(value, 2)
+        return ret
+
+    @staticmethod
+    def linspace2(date_list_data, key, num):
+        ret = list()
+        list_factor_data = []
+        for date, list_data in date_list_data.items():
+            for factor_data in list_data:
+                list_factor_data.append(factor_data[key])
+        list_factor_data.sort()
+        len_list_factor_data = len(list_factor_data)
+        ret = []
+        for i in range(10):
+            begin_idx = i * len_list_factor_data // 10
+            if i == 9:
+                end_idx = len_list_factor_data - 1
+            else:
+                end_idx = (i+1) * len_list_factor_data // 10 - 1
+            print(f'begin_idx = {begin_idx}, end_idx = {end_idx}, num = {end_idx - begin_idx + 1}')
+            min_value = list_factor_data[begin_idx]
+            max_value = list_factor_data[end_idx]
+            ret.append(f'{min_value}~{max_value}')
         return ret
 
     def get_config_value(self, config_name):
