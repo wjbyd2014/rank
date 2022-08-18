@@ -78,11 +78,11 @@ if __name__ == '__main__':
                                     {},
                                     ['日期', '代码', '名称', '可买金额', '盈亏金额', '盈亏比', '计划买入金额', '实际买入金额', '实际盈亏金额',
                                      '开盘价涨停', '100日首板新高', '当日已成交金额', '昨天缩量大涨', '前天缩量大涨', '连扳数', '当日排名', '淘汰原因'],
-                                    ['买入量', '卖出日期'], 20220727, 300)
+                                    ['买入量', '卖出日期'], 20220812, 800)
 
     zhuiban_strategy.add_factor2('尾部资金', [1])
-    zhuiban_strategy.add_factor2('最大连扳数', [1])
-    zhuiban_strategy.set_max_use_money_per_day(3000)
+    zhuiban_strategy.set_max_use_money_per_day(10000)
+    zhuiban_strategy.set_max_use_money_per_stock(3000)
     zhuiban_strategy.set_data_filter(lambda data: data['代码'][2:4] not in ['60', '00'])
     zhuiban_strategy.set_sort_data_list(sort_data_list)
 
