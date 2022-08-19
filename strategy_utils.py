@@ -28,7 +28,7 @@ def draw_earn_money(day_earn_money, work_dir, title, show_picture):
     ax1 = df.plot(figsize=(14, 6), yticks=[*np.linspace(ymin, ymax, 20)], rot=90, sharey=False,
                   subplots=False, grid=True, fontsize=8)
 
-    alldays = matplotlib.dates.DayLocator(interval=5)  # 主刻度为每月
+    alldays = matplotlib.dates.DayLocator(interval=10)  # 主刻度为每月
     ax1.xaxis.set_major_locator(alldays)  # 设置主刻度
     ax1.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y%m%d'))  # 主刻度格式为年月日
     ax1.xaxis.set_minor_formatter(plt.NullFormatter())  # 取消副刻度
@@ -82,7 +82,7 @@ def draw_list_earn_money(list_day_earn_money, legends, work_dir, title, show_pic
         ax.plot(d_keys, values, label=legends[idx])
         idx += 1
 
-    alldays = matplotlib.dates.DayLocator(interval=5)  # 主刻度为每月
+    alldays = matplotlib.dates.DayLocator(interval=10)  # 主刻度为每月
     ax.xaxis.set_major_locator(alldays)  # 设置主刻度
     ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter('%Y%m%d'))  # 主刻度格式为年月日
     ax.xaxis.set_minor_formatter(plt.NullFormatter())  # 取消副刻度
