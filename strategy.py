@@ -64,9 +64,6 @@ class Strategy:
         self.writer = None
         self.data_filter = lambda data: True
         self.earn_money_list = list()
-        self.max_use_money_per_day = 6000
-        self.max_use_money_per_stock = 1800
-        self.buy_vol_ratio = 100
         self.begin_date = begin_date
         self.date_num = date_num
         self.sort_data_list = sort_data_list
@@ -85,15 +82,6 @@ class Strategy:
 
     def set_data_filter(self, data_filter):
         self.data_filter = data_filter
-
-    def set_max_use_money_per_day(self, value):
-        self.max_use_money_per_day = value
-
-    def set_max_use_money_per_stock(self, value):
-        self.max_use_money_per_stock = value
-
-    def set_buy_vol_ratio(self, value):
-        self.buy_vol_ratio = value
 
     def set_sort_data_list(self, func):
         self.sort_data_list = func
@@ -127,23 +115,14 @@ class Strategy:
             num += 1
             self.cm.update_configs(factors)
 
-            value = self.cm.get_config_value('每日资金总量')
-            if value:
-                self.set_max_use_money_per_day(value)
-
-            value = self.cm.get_config_value('每只股票最大资金量')
-            if value:
-                self.set_max_use_money_per_stock(value)
-
-            value = self.cm.get_config_value('买入比')
-            if value:
-                self.set_buy_vol_ratio(value)
-
             total_earn_money = 0
             total_use_money = 0
             earn_money = dict()
             for date in self.ts_dates:
                 data_list_copy = self.date_to_stock_data[date].copy()
+                self.pre_count_buy_amount(data_list_copy)
+                self.__count_buy_amount(data_list_copy)
+                self.post_count_buy_amount(data_list_copy)
                 self.select_stocks(data_list_copy)
                 got_money, use_money, left_money = \
                     self.count_stock_area_earn_money(data_list_copy, normal_mode)
@@ -217,10 +196,6 @@ class Strategy:
                 data['卖出日期'] = sell_info['卖出日期']
 
                 data_list.append(data)
-
-            self.pre_process_data(data_list)
-            self.__count_buy_amount(data_list)
-            self.post_process_data(data_list)
             self.date_to_stock_data[date] = data_list
         return True
 
@@ -244,26 +219,27 @@ class Strategy:
     def __gen_factors(self):
         self.list_factors = self.cm.gen_factors()
 
-    def pre_process_data(self, data_list):
-        pass
+    def pre_count_buy_amount(self, data_list):
+        for data in data_list:
+            data['实际买入量'] = data['买入量']
 
-    def post_process_data(self, data_list):
+    def post_count_buy_amount(self, data_list):
         pass
 
     def __count_buy_amount(self, data_list):
-        use_money_per_stock = self.max_use_money_per_stock * 10000
+        use_money_per_stock = self.cm.get_config_value('单只股票购买上限') * 10000
 
         for data in data_list:
             data['可买金额'] = data['计划买入金额'] = data['盈亏金额'] = data['盈亏比'] = 0
-            if data['买入价'] > 0 and data['买入量'] > 0:
-                data['可买金额'] = round(data['买入价'] * data['买入量'])
+            if data['买入价'] > 0 and data['实际买入量'] > 0:
+                data['可买金额'] = round(data['买入价'] * data['实际买入量'])
                 data['计划买入金额'] = data['可买金额']
 
                 if data['计划买入金额'] > use_money_per_stock:
                     data['计划买入金额'] = use_money_per_stock
 
                 data['盈亏比'] = round((data['卖出价'] / data['买入价'] - 1) * 100, 2)
-                data['盈亏金额'] = round((data['卖出价'] - data['买入价']) * data['买入量'])
+                data['盈亏金额'] = round((data['卖出价'] - data['买入价']) * data['实际买入量'])
 
     def __write_csv(self, data_list):
         if not self.fd:
@@ -304,12 +280,13 @@ class Strategy:
         for idx, data in enumerate(data_list):
             data['当日排名'] = idx + 1
         return self._count_stock_earn_money(
-            data_list, self.max_use_money_per_day * 10000, self.cm.get_config_value('尾部资金') * 10000, normal_mode)
+            data_list, self.cm.get_config_value('每日资金总量') * 10000, self.cm.get_config_value('尾部资金') * 10000, normal_mode)
 
     def _count_stock_earn_money(self, data_list, total_money, retain_money, normal_mode):
         total_earn_money = 0
         total_use_money = 0
         left_money = total_money
+        buy_vol_ratio = self.cm.get_config_value('买入比')
 
         for data in data_list:
             if left_money > 0 and not data.get('淘汰原因'):
@@ -318,7 +295,7 @@ class Strategy:
                 else:
                     data['实际买入金额'] = data['计划买入金额']
 
-                data['实际买入金额'] *= self.buy_vol_ratio / 100
+                data['实际买入金额'] *= buy_vol_ratio / 100
 
                 if data['代码'][0:2] == 'SH':
                     service_fee = 上交所手续费
