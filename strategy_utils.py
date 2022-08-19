@@ -94,7 +94,7 @@ def draw_list_earn_money(list_day_earn_money, legends, work_dir, title, show_pic
     plt.grid()
     plt.xticks(fontsize=8, rotation=90)
     plt.yticks(fontsize=8)
-    plt.legend(fontsize=16)
+    plt.legend(fontsize=8)
 
     if show_picture:
         plt.show()
