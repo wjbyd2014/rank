@@ -67,6 +67,7 @@ class Strategy:
         self.begin_date = begin_date
         self.date_num = date_num
         self.sort_data_list = sort_data_list
+        self.list_legends = []
 
     def __del__(self):
         if self.fd:
@@ -91,16 +92,8 @@ class Strategy:
         self.__draw_picture1()
 
     def run_in_linspace_compare_mode(self, list_legends=None):
-        if not list_legends:
-            list_legends = []
-            for factors in self.cm.list_factors:
-                if len(factors) > 1:
-                    list_legends = factors
-
-        assert list_legends
-
         self.__run(False, False, True, False)
-        self.__draw_picture2(list_legends)
+        self.__draw_picture2(self.list_legends)
 
     def run_in_linspace_count_mode(self, do_print=False):
         self.__run(True, do_print, False, False)
@@ -114,6 +107,14 @@ class Strategy:
         for factors in self.list_factors:
             num += 1
             self.cm.update_configs(factors)
+
+            if do_collect_earn_money and not normal_mode:
+                legend_str = ''
+                for i, config_name in enumerate(self.cm.config_values):
+                    config_value = self.cm.get_config_value(config_name)
+                    if len(self.cm.list_factors[i]) > 1:
+                        legend_str += f'{config_name}:{config_value},'
+                self.list_legends.append(legend_str[:-1])
 
             total_earn_money = 0
             total_use_money = 0
