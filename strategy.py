@@ -89,11 +89,11 @@ class Strategy:
 
     def run_in_normal_mode(self):
         self.__run(False, False, True, True)
-        self.__draw_picture1()
+        self.__draw_picture1(self.cm.get_config_value('每日资金总量'))
 
     def run_in_linspace_compare_mode(self, list_legends=None):
         self.__run(False, False, True, False)
-        self.__draw_picture2(self.list_legends)
+        self.__draw_picture2(self.list_legends, self.cm.get_config_value('每日资金总量'))
 
     def run_in_linspace_count_mode(self, do_print=False):
         self.__run(True, do_print, False, False)
@@ -266,11 +266,11 @@ class Strategy:
             data_to_write['实际盈亏金额'] = round(data_to_write['实际盈亏金额'] / 10000, 2)
             self.writer.writerow(data_to_write)
 
-    def __draw_picture1(self):
-        draw_earn_money(self.earn_money_list[0], self.work_dir, self.name + '收益图', False)
+    def __draw_picture1(self, base_money,):
+        draw_earn_money(self.earn_money_list[0], base_money * 10000, self.work_dir, self.name + '收益图', False)
 
-    def __draw_picture2(self, list_legends):
-        draw_list_earn_money(self.earn_money_list, list_legends, self.work_dir, self.name + '收益图', True)
+    def __draw_picture2(self, list_legends, base_money):
+        draw_list_earn_money(self.earn_money_list, list_legends, base_money * 10000, self.work_dir, self.name + '收益图', True)
 
     def select_stocks(self, data_list):
         for data in data_list:
