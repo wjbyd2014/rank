@@ -272,9 +272,9 @@ class Strategy:
     def __draw_picture2(self, list_legends):
         draw_list_earn_money(self.earn_money_list, list_legends, self.work_dir, self.name + '收益图', True)
 
-    @abstractmethod
     def select_stocks(self, data_list):
-        pass
+        for data in data_list:
+            data['淘汰原因'] = ''
 
     def count_stock_area_earn_money(self, data_list, normal_mode):
         self.sort_data_list(data_list)
