@@ -8,12 +8,12 @@ import numpy as np
 印花税 = 0.001
 
 
-def draw_earn_money(day_earn_money, work_dir, title, show_picture):
-    earn_money = 0
+def draw_earn_money(day_earn_money, base_money, work_dir, title, show_picture):
+    current_money = base_money
     d = dict()
     for day in day_earn_money:
-        earn_money += day_earn_money[day]
-        d[pd.to_datetime(str(day))] = [earn_money / 10000]
+        current_money += day_earn_money[day]
+        d[pd.to_datetime(str(day))] = round(current_money / base_money * 100, 2)
 
     matplotlib.rcParams['font.sans-serif'] = ['SimHei']
     matplotlib.rcParams['font.family'] = 'sans-serif'
@@ -44,7 +44,7 @@ def draw_earn_money(day_earn_money, work_dir, title, show_picture):
         f.savefig(path)
 
 
-def draw_list_earn_money(list_day_earn_money, legends, work_dir, title, show_picture):
+def draw_list_earn_money(list_day_earn_money, legends, base_money, work_dir, title, show_picture):
     assert (len(list_day_earn_money) == len(legends))
 
     ymax = ymin = None
@@ -52,19 +52,20 @@ def draw_list_earn_money(list_day_earn_money, legends, work_dir, title, show_pic
 
     list_d = list()
     for day_earn_money in list_day_earn_money:
-        earn_money = 0
+        current_money = base_money
         d = dict()
         for day in day_earn_money:
-            earn_money += day_earn_money[day]
-            d[pd.to_datetime(str(day))] = [earn_money / 10000]
+            current_money += day_earn_money[day]
+            current_ratio = round(current_money / base_money * 100, 2)
+            d[pd.to_datetime(str(day))] = current_ratio
 
             if not ymax:
-                ymax = ymin = earn_money / 10000
+                ymax = ymin = current_ratio
             else:
-                if ymax < earn_money / 10000:
-                    ymax = earn_money / 10000
-                if ymin > earn_money / 10000:
-                    ymin = earn_money / 10000
+                if ymax < current_ratio:
+                    ymax = current_ratio
+                if ymin > current_ratio:
+                    ymin = current_ratio
         if not xmax:
             xmax = list(d.keys())[-1]
             xmin = list(d.keys())[0]
