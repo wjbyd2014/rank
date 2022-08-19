@@ -126,7 +126,7 @@ class Strategy:
                 self.post_count_buy_amount(data_list_copy)
                 self.select_stocks(data_list_copy)
                 got_money, use_money, left_money = \
-                    self.count_stock_area_earn_money(data_list_copy, normal_mode)
+                    self.count_stock_earn_money(data_list_copy, normal_mode)
 
                 if left_money > 0:
                     print(f"{date} left {left_money}\n")
@@ -276,7 +276,7 @@ class Strategy:
         for data in data_list:
             data['淘汰原因'] = ''
 
-    def count_stock_area_earn_money(self, data_list, normal_mode):
+    def count_stock_earn_money(self, data_list, normal_mode):
         self.sort_data_list(data_list)
         for idx, data in enumerate(data_list):
             data['当日排名'] = idx + 1
