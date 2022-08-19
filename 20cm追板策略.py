@@ -32,8 +32,8 @@ class Strategy20cm(Strategy):
             if data['计划买入金额'] < min_use_money_per_stock:
                 data['计划买入金额'] = min_use_money_per_stock
 
+    """
     def select_stocks(self, data_list):
-        """
         for data in data_list:
             data['淘汰原因'] = ''
 
@@ -47,7 +47,7 @@ class Strategy20cm(Strategy):
             if data['连扳数'] < 2 and data['100日内出现5日涨幅超70'] == 1:
                 data['淘汰原因'] = '100日内出现5日涨幅超70'
                 continue
-        """
+    """
 
     def sort_data_list_by_time(self, data_list):
         data_list.sort(key=cmp_to_key(com_function))
