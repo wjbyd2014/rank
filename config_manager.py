@@ -6,7 +6,7 @@ class ConfigManager:
         self.log_path = log_path
 
     def add_factor1(self, name, min_value, max_value, interval):
-        self.list_factors.append(self.分箱(min_value, max_value, interval))
+        self.list_factors.append(self.linspace1(min_value, max_value, interval))
         assert name not in self.config_values
         self.config_values[name] = None
 
