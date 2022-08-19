@@ -16,6 +16,10 @@ class Strategy10cm(Strategy):
     def __del__(self):
         super().__del__()
 
+    def post_count_buy_amount(self, data_list):
+        for data in data_list:
+            data['计划买入金额'] = 500 * 10000
+
     def select_stocks(self, data_list):
         for data in data_list:
             data['淘汰原因'] = ''
@@ -36,11 +40,8 @@ class Strategy10cm(Strategy):
                     data['淘汰原因'] = '没有远端涨停板'
                     continue
 
-            if data['买入价涨幅3'] > self.cm.get_config_value('最大3日买入价涨幅'):
-                data['淘汰原因'] = '买入价涨幅'
-                continue
-
-            if data['10日最大两个天量之和'] < self.cm.get_config_value('最小10日最大两个天量之和'):
+            max_10day_two_vol = self.cm.get_config_value('最小10日最大两个天量之和')
+            if max_10day_two_vol and data['10日最大两个天量之和'] < max_10day_two_vol:
                 data['淘汰原因'] = '10日最大两个天量之和'
                 continue
 
@@ -70,13 +71,9 @@ if __name__ == '__main__':
                                     '追板策略股票池.csv',
                                     {'日期': str, '代码': str, '名称': str,
                                      '买入价': float, '买入时间': str, '买入量': float,
-                                     '买入价涨幅3': float, '买入价涨幅5': float, '买入价涨幅7': float,
-                                     '买入价涨幅10': float, '买入价涨幅15': float, '买入价涨幅30': float,
                                      '1日涨停数': int, '2日涨停数': int, '3日涨停数': int, '4日涨停数': int,
                                      '5日涨停数': int, '6日涨停数': int, '7日涨停数': int,
                                      '10日涨停数': int, '15日涨停数': int, '30日涨停数': int,
-                                     '100日内出现5日涨幅超70': int,
-                                     '200日内出现5日涨幅超70': int
                                      },
                                     'zhuiban.js',
                                     {},
@@ -91,22 +88,27 @@ if __name__ == '__main__':
                                      '买入价', '卖出价', '当日排名', '淘汰原因'],
                                     ['买入量', '卖出日期'], 20220727, 300)
 
-    zhuiban_strategy.add_factor2('尾部资金', [1])
-    zhuiban_strategy.add_factor2('最大3日买入价涨幅', [6])
-    zhuiban_strategy.add_factor2('最小10日最大两个天量之和', [10])
-    zhuiban_strategy.add_factor2('买入比', [100])
-    zhuiban_strategy.set_max_use_money_per_day(3000)
     zhuiban_strategy.set_data_filter(lambda data: data['代码'][2:4] in ['60', '00'])
     zhuiban_strategy.set_sort_data_list(sort_data_list)
 
+    zhuiban_strategy.init()
+    zhuiban_strategy.load_data()
+    """factors = ConfigManager.linspace2(zhuiban_strategy.get_data(), '开盘价涨幅', 10)
+    zhuiban_strategy.add_factor2('开盘价涨幅范围', factors)"""
+    zhuiban_strategy.add_factor2('每日资金总量', [3000])
+    zhuiban_strategy.add_factor2('单只股票购买上限', [3000])
+    zhuiban_strategy.add_factor2('买入比', [100])
+    zhuiban_strategy.add_factor2('尾部资金', [1])
+
+    # zhuiban_strategy.add_factor2('最小10日最大两个天量之和', [0])
+    zhuiban_strategy.gen_factors()
+
     len_factors = zhuiban_strategy.len_factors()
     print(f'len_factors = {len_factors}')
-
-    zhuiban_strategy.init()
 
     if zhuiban_strategy.len_factors() == 1:
         zhuiban_strategy.run_in_normal_mode()
     elif zhuiban_strategy.len_factors() <= 20:
         zhuiban_strategy.run_in_linspace_compare_mode()
     else:
-        zhuiban_strategy.run_in_linspace_count_mode(True)
+        zhuiban_strategy.run_in_linspace_count_mode(False)
