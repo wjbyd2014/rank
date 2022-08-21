@@ -33,8 +33,23 @@ Begin
         if 买入[0] = 0 then
             continue;
 
+        上市天数 := 计算自定义上市天数(stock_code, day);
+        上涨周期 := 寻找上涨起点(stock_name, stock_code, day, 上市天数, 3, 3);
+        if 上涨周期 = 0 then
+        begin
+            上涨起点 := day;
+        end
+        else
+        begin
+            with *,array(pn_Stock():stock_code, PN_Cycle():cy_day()) do
+            begin
+                上涨起点 := StockEndTPrevNDay(day, 上涨周期);
+            end
+        end
+        上涨起点日 := DateToStr(上涨起点);
+
         涨停 := 计算涨停板(stock_code, day);
-        最高价 := 计算最高价(stock_name, stock_code, day);
+        最高价 := 计算最高价(stock_name, stock_code, 上涨起点);
         涨幅 := 计算涨幅(stock_name, stock_code, day, 70);
         买入金额 := 计算买入量(stock_name, stock_code, day, 6);
         买入量 := int(买入金额/今日涨停价);
@@ -53,10 +68,101 @@ Begin
                 '15日涨停数':涨停[8], '30日涨停数':涨停[9],
                 '100日内出现5日涨幅超70':涨幅[0],
                 '200日内出现5日涨幅超70':涨幅[1],
-                '100日首板新高':首板新高));
+                '100日首板新高':首板新高, '上涨起点日': 上涨起点日,
+                ));
     end;
     return exportjsonstring(ret);
 End;
+
+function 计算自定义上市天数(stock_code, day);
+begin
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
+    begin
+        当前日 := DateToInt(day);
+        上市日 := FundGoMarketDate();
+        if 当前日 = 上市日 then
+            return 0;
+
+        上市天数 := StockGoMarketDays();
+        assert(上市天数 > 0);
+
+        num := 1;
+        while true do
+        begin
+            下一日 := StockEndTPrevNDay(IntToDate(上市日), -num);
+            str_next_day := DateToStr(下一日);
+
+            if 下一日 = day then
+                return 0;
+
+            if stockiszt2(下一日) then
+                num += 1;
+            else
+                break;
+        end
+    end
+    return day - 下一日;
+end
+
+function 创n日新高(stock_name, stock_code, day, 回溯天数, 创几日新高);
+begin
+    close1 := ref(close(), 回溯天数);
+    for i := 1 to 创几日新高 - 1 do
+    begin
+        日期3 := DateToStr(StockEndTPrevNDay(day, i + 回溯天数));
+
+        close2 := ref(close(), i + 回溯天数);
+        if close1 < close2  then
+            return False; // 没创n日新高
+    end
+    return True;
+end
+
+function 几日内创过几日新高(stock_name, stock_code, day, 回溯天数, 几日内, 创几日新高);
+begin
+    for i := 0 to 几日内 - 1 do
+    begin
+        日期2 := DateToStr(StockEndTPrevNDay(day, i + 回溯天数)); // 判断日
+        if 创n日新高(stock_name, stock_code, day, i + 回溯天数, 创几日新高) then
+            return True;
+    end
+    return False;
+end
+
+function 寻找上涨起点(stock_name, stock_code, day, 上市天数, 几日内, 创几日新高);
+begin
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
+    begin
+        上市日 := StockFirstDay(stock_code);
+
+        if day = 上市日 then
+            return 0;
+
+        回溯天数 := 1; // 回溯多少天
+        while True do
+        begin
+            日期1 := DateToStr(StockEndTPrevNDay(day, 回溯天数)); // 回溯日
+            回溯日 := StockEndTPrevNDay(day, 回溯天数);
+
+            if stockiszt(回溯日) then
+            begin
+                回溯天数 += 1; // 当日涨停，继续向前回溯
+                continue
+            end
+
+            if 回溯日 = 上市日 then
+            begin
+                return 回溯天数;
+            end
+
+            if 几日内创过几日新高(stock_name, stock_code, day, 回溯天数, 几日内, 创几日新高) then
+                回溯天数 += 1; // 回溯日n1日内创过n2日新高，继续向前回溯
+            else
+                break;
+        end
+    end
+    return 回溯天数 - 1;
+end
 
 function 计算买入量(stock_name, stock_code, day, num);
 begin
@@ -263,6 +369,7 @@ begin
         for i := 1 to 30 do
         begin
             one_day := StockEndTPrevNDay(day, i);
+            str_one_day := DateToStr(one_day);
             if StockIsZt(one_day) then
                 num += 1;
 
