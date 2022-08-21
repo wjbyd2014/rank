@@ -23,8 +23,8 @@ class Strategy20cm(Strategy):
             data['实际买入量'] = int(data['买入量'] / buy_vol_devide_ratio)
 
             if data['5日涨停数'] > 0:
-                data['实际买入量'] = data['实际买入量'] * data['5日涨停数'] * buy_vol_mul_ratio
-                data['可买金额放大系数'] = data['5日涨停数'] * buy_vol_mul_ratio
+                data['实际买入量'] = data['实际买入量'] * (buy_vol_mul_ratio ** data['5日涨停数'])
+                data['可买金额放大系数'] = (buy_vol_mul_ratio ** data['5日涨停数'])
 
     def post_count_buy_amount(self, data_list):
         min_use_money_per_stock = self.cm.get_config_value('单只股票购买下限') * 10000
@@ -81,26 +81,11 @@ if __name__ == '__main__':
                                     ['当日排名', '淘汰原因'],
                                     '追板策略股票池.csv',
                                     {'日期': str, '代码': str, '名称': str,
-                                     '买入价': float, '买入时间': str, '买入量': float, '当日已成交金额': float,
-                                     '买入价涨幅3': float, '买入价涨幅5': float, '买入价涨幅7': float,
-                                     '买入价涨幅10': float, '买入价涨幅15': float, '买入价涨幅30': float,
-                                     '1日涨停数': int, '2日涨停数': int, '3日涨停数': int, '4日涨停数': int,
-                                     '5日涨停数': int, '6日涨停数': int, '7日涨停数': int,
-                                     '10日涨停数': int, '15日涨停数': int, '30日涨停数': int,
-                                     '100日内出现5日涨幅超70': int,
-                                     '200日内出现5日涨幅超70': int,
-                                     '100日首板新高': int
+                                     '买入价': float, '买入时间': str, '买入量': float, '当日已成交金额': float, '5日涨停数': int
                                      },
                                     'zhuiban.js',
                                     {},
-                                    '每日股票信息.csv',
-                                    {'名称': str, '代码': str, '上市天数': float, 'ma3向上': int, 'ma5向上': int,
-                                     '开盘价涨停': int, '开盘价涨幅': float, '昨日是否一字板': int,
-                                     '连扳数': int, '10日最大两个天量之和': float,
-                                     '昨天缩量大涨': int, '前天缩量大涨': int
-                                     },
-                                    'stock_info_day.js',
-                                    {},
+                                    None, {}, '', {},
                                     ['日期', '代码', '名称', '可买金额', '盈亏金额', '盈亏比', '计划买入金额', '实际买入金额', '实际盈亏金额',
                                      '可买金额放大系数', '连扳数', '当日排名', '淘汰原因'],
                                     ['买入量', '卖出日期'], 20220812, 800)
