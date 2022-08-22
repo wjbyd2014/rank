@@ -62,6 +62,7 @@ Begin
                 '买入价涨幅10':count_ratio(买入[0], 最高价[3]),
                 '买入价涨幅15':count_ratio(买入[0], 最高价[4]),
                 '买入价涨幅30':count_ratio(买入[0], 最高价[5]),
+                '买入价涨幅60':count_ratio(买入[0], 最高价[6]),
                 '1日涨停数':涨停[0], '2日涨停数':涨停[1], '3日涨停数':涨停[2],
                 '4日涨停数':涨停[3], '5日涨停数':涨停[4], '6日涨停数':涨停[5],
                 '7日涨停数':涨停[6], '10日涨停数':涨停[7],
@@ -271,7 +272,7 @@ function 计算最高价(stock_name, stock_code, day);
 begin
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
     begin
-        data := ref(nday(30, '时间', datetimetostr(sp_time()), '当日高价',high()), 1);
+        data := ref(nday(60, '时间', datetimetostr(sp_time()), '当日高价',high()), 1);
         if data = 0 then
             return array(0, 0, 0, 0, 0, 0);
 
@@ -285,26 +286,30 @@ begin
     num10 := 0;
     num15 := 0;
     num30 := 0;
+    num60 := 0;
     len := length(data);
-    for i := len downto 0 do
+
+    for i := len - 1 downto 0 do
     begin
         if data_high[i] > highest then
             highest := data_high[i];
 
-        if i = len - 3 then
-            num3 := highest;
-        else if i = len - 5 then
-            num5 := highest;
-        else if i = len - 7 then
-            num7 := highest;
-        else if i = len - 10 then
-            num10 := highest;
-        else if i = len - 15 then
-            num15 := highest;
-        else if i = len - 30 then
-            num30 := highest;
+        if i >= len - 3 then
+            num3 := num5 := num7 := num10 := num15 := num30 := num60 := highest;
+        else if i >= len - 5 then
+            num5 := num7 := num10 := num15 := num30 := num60 := highest;
+        else if i >= len - 7 then
+            num7 := num10 := num15 := num30 := num60 := highest;
+        else if i >= len - 10 then
+            num10 := num15 := num30 := num60 := highest;
+        else if i >= len - 15 then
+            num15 := num30 := num60 := highest;
+        else if i >= len - 30 then
+            num30 := num60 := highest;
+        else if i >= len - 60 then
+            num60 := highest;
     end
-    return array(num3, num5, num7, num10, num15, num30);
+    return array(num3, num5, num7, num10, num15, num30, num60);
 end
 
 function 计算买入(stock_name, stock_code, day);
