@@ -40,8 +40,8 @@ class Strategy10cm(Strategy):
                     data['淘汰原因'] = '没有远端涨停板'
                     continue
 
-            max_buy_price_incr_ratio = self.cm.get_config_value('最大3日买入价涨幅')
-            if max_buy_price_incr_ratio and data['买入价涨幅3'] > max_buy_price_incr_ratio:
+            max_buy_price_incr_ratio = self.cm.get_config_value('最大15日买入价涨幅')
+            if max_buy_price_incr_ratio and data['买入价涨幅15'] > max_buy_price_incr_ratio:
                 data['淘汰原因'] = '买入价涨幅'
                 continue
 
@@ -81,14 +81,14 @@ if __name__ == '__main__':
                                      '10日涨停数': int, '15日涨停数': int, '30日涨停数': int,
                                      '买入价涨幅3': float, '买入价涨幅5': float, '买入价涨幅7': float,
                                      '买入价涨幅10': float, '买入价涨幅15': float, '买入价涨幅30': float,
-                                     '上涨起点日': str
+                                     '买入价涨幅60': float, '上涨起点日': str
                                      },
                                     'zhuiban.js',
                                     {},
                                     None, None, None, None,
                                     ['日期', '代码', '名称', '可买金额', '盈亏金额', '盈亏比', '计划买入金额', '实际买入金额', '实际盈亏金额',
                                      '买入价', '卖出价', '当日排名', '淘汰原因'],
-                                    ['买入量', '卖出日期'], 20220812, 300)
+                                    ['买入量', '卖出日期'], 20220812, 800)
 
     zhuiban_strategy.set_data_filter(lambda data: data['代码'][2:4] in ['60', '00'])
     zhuiban_strategy.set_sort_data_list(sort_data_list)
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     zhuiban_strategy.add_factor2('单只股票购买上限', [3000])
     zhuiban_strategy.add_factor2('买入比', [100])
     zhuiban_strategy.add_factor2('尾部资金', [1])
-    zhuiban_strategy.add_factor2('最大3日买入价涨幅', [6])
+    zhuiban_strategy.add_factor2('最大15日买入价涨幅', [6])
     zhuiban_strategy.gen_factors()
 
     len_factors = zhuiban_strategy.len_factors()
