@@ -1,6 +1,8 @@
 import os
 import csv
 
+from tinysoft import TinySoft
+
 
 class ReadOnlyCsvCache:
     def __init__(self, name, work_dir, fields_dict, input_csv_file):
@@ -38,73 +40,6 @@ class ReadOnlyCsvCache:
             return self.cache[key]
         else:
             return None
-
-
-class ReadWriteKeyCsvCache:
-    def __init__(self, name, work_dir, fields_dict, ts, code_file_name, other_params, csv_file_name):
-        self.cache = dict()
-        self.name = name
-        self.ts = ts
-        self.code = ts.F读取脚本文件(code_file_name)
-        self.other_params = other_params
-        self.csv_file_name = work_dir + csv_file_name
-        self.fields_dict = fields_dict
-        self.fd = None
-        self.writer = None
-
-    def build_cache(self):
-        if not os.path.exists(self.csv_file_name):
-            return True
-
-        with open(self.csv_file_name, mode='r', newline='') as csv_file:
-            reader = csv.DictReader(csv_file)
-            for row in reader:
-                if row['key'] in self.cache:
-                    print('重复key({}) in {}'.format(row['key'], self.name))
-                    return False
-
-                data = {'key': row['key']}
-                for field_name, filed_converter in self.fields_dict.items():
-                    data[field_name] = filed_converter(row[field_name])
-                self.cache[row['key']] = data
-        return True
-
-    def keys(self):
-        return list(self.fields_dict.keys())
-
-    def get(self, key):
-        if key in self.cache:
-            return self.cache[key]
-
-        key_ = key.split('|')
-        if len(key_) != 2:
-            return None
-
-        print(f'{self.name} downloading {key}')
-        day = key_[0]
-        stock = key_[1]
-        js_params = {'day': self.ts.F生成天软日期_str(day), 'stock_code': stock[2:]}
-        for param_name, param_value in self.other_params.items():
-            js_params[param_name] = param_value
-        ret_data = self.ts.F执行语句(self.code, js_params)
-
-        if not self.fd:
-            new_file = not os.path.exists(self.csv_file_name)
-            self.fd = open(self.csv_file_name, mode='a', newline='')
-            self.writer = csv.DictWriter(self.fd, fieldnames=['key'] + self.keys())
-            if new_file:
-                self.writer.writeheader()
-
-        data = {'key': key}
-        for field_name in self.fields_dict:
-            data[field_name] = ret_data[0][field_name]
-        self.cache[key] = data
-        self.writer.writerow(data)
-        return self.cache[key]
-
-    def __del__(self):
-        if self.fd:
-            self.fd.close()
 
 
 class ReadWriteDateCsvCache:
@@ -154,21 +89,17 @@ class ReadWriteDateCsvCache:
 
             ts_data = self.ts.F执行语句(self.code, js_params)
 
-            if not self.fd:
-                new_file = not os.path.exists(self.csv_file_name)
-                self.fd = open(self.csv_file_name, mode='a', newline='')
-                self.writer = csv.DictWriter(self.fd, fieldnames=['key'] + self.keys())
-                if new_file:
-                    self.writer.writeheader()
-
             for data in ts_data:
+                if not self.fd:
+                    new_file = not os.path.exists(self.csv_file_name)
+                    self.fd = open(self.csv_file_name, mode='a', newline='')
+                    self.writer = csv.DictWriter(self.fd, fieldnames=['key', '日期'] + list(data.keys()))
+                    if new_file:
+                        self.writer.writeheader()
+
                 data['key'] = date_str + '|' + data['代码']
                 data['日期'] = date_str
-
-                data_to_write = {}
-                for field in ['key'] + self.keys():
-                    data_to_write[field] = data[field]
-                self.writer.writerow(data_to_write)
+                self.writer.writerow(data)
             self.cache[date] = ts_data
             return ts_data
 
@@ -226,22 +157,20 @@ class ReadWriteDateKeyCsvCache:
                 js_params[param_name] = param_value
 
             ts_data = self.ts.F执行语句(self.code, js_params)
-
-            if not self.fd:
-                new_file = not os.path.exists(self.csv_file_name)
-                self.fd = open(self.csv_file_name, mode='a', newline='')
-                self.writer = csv.DictWriter(self.fd, fieldnames=['key'] + self.keys())
-                if new_file:
-                    self.writer.writeheader()
-
             for data in ts_data:
-                data['key'] = key_[0] + '|' + data['代码']
+                if not self.fd:
+                    new_file = not os.path.exists(self.csv_file_name)
+                    self.fd = open(self.csv_file_name, mode='a', newline='')
+                    self.writer = csv.DictWriter(self.fd, fieldnames=['key'] + list(data.keys()))
+                    if new_file:
+                        self.writer.writeheader()
 
-                data_to_write = {}
+                data['key'] = key_[0] + '|' + data['代码']
+                data_to_ret = {}
                 for field in ['key'] + self.keys():
-                    data_to_write[field] = data[field]
-                self.writer.writerow(data_to_write)
-                self.cache[data['key']] = data_to_write
+                    data_to_ret[field] = data[field]
+                self.writer.writerow(data)
+                self.cache[data['key']] = data_to_ret
             return self.cache[key]
 
     def __del__(self):
@@ -258,10 +187,10 @@ class ReadWriteDateKeyCsvCache:
                                                 {'名称': str, '代码': str, '上市天数': float, 'ma3向上': int, 'ma5向上': int,
                                                  '上涨起点日': str, '涨板打断次数': int,
                                                  '开盘价涨幅': float, '昨日是否一字板': int
-                                                 }, test_ts, 'mianji_stock_info_day.js',
+                                                 }, test_ts, 'stock_info_day.js',
                                                 {}, 'test_mianji_stock_info_day.csv')
     stock_info_cache.build_cache()
-    ret_date = test_ts.get_dates(20220727)
+    ret_date = test_ts.get_dates(20220727, 2)
     ret_date.reverse()
 
     test_date_key = dict()
@@ -271,4 +200,3 @@ class ReadWriteDateKeyCsvCache:
         test_key = date_str+'|SH600000'
         test_value = stock_info_cache.get(test_key)
         print(f'{test_key} = ', test_value)"""
-
