@@ -91,7 +91,7 @@ class Strategy:
         self.__run(False, False, True, True)
         self.__draw_picture1(self.cm.get_config_value('每日资金总量'))
 
-    def run_in_linspace_compare_mode(self, list_legends=None):
+    def run_in_linspace_compare_mode(self):
         self.__run(False, False, True, False)
         self.__draw_picture2(self.list_legends, self.cm.get_config_value('每日资金总量'))
 
@@ -231,16 +231,15 @@ class Strategy:
         use_money_per_stock = self.cm.get_config_value('单只股票购买上限') * 10000
 
         for data in data_list:
-            data['可买金额'] = data['计划买入金额'] = data['盈亏金额'] = data['盈亏比'] = 0
-            if data['买入价'] > 0 and data['实际买入量'] > 0:
+            if not data['可买金额']:
                 data['可买金额'] = round(data['买入价'] * data['实际买入量'])
-                data['计划买入金额'] = data['可买金额']
 
-                if data['计划买入金额'] > use_money_per_stock:
-                    data['计划买入金额'] = use_money_per_stock
+            data['计划买入金额'] = data['可买金额']
+            if data['计划买入金额'] > use_money_per_stock:
+                data['计划买入金额'] = use_money_per_stock
 
-                data['盈亏比'] = round((data['卖出价'] / data['买入价'] - 1) * 100, 2)
-                data['盈亏金额'] = round((data['卖出价'] - data['买入价']) * data['实际买入量'])
+            data['盈亏比'] = round((data['卖出价'] / data['买入价'] - 1) * 100, 2)
+            data['盈亏金额'] = data['盈亏比'] * data['可买金额'] / 100
 
     def __write_csv(self, data_list):
         if not self.fd:
@@ -266,11 +265,12 @@ class Strategy:
             data_to_write['实际盈亏金额'] = round(data_to_write['实际盈亏金额'] / 10000, 2)
             self.writer.writerow(data_to_write)
 
-    def __draw_picture1(self, base_money,):
+    def __draw_picture1(self, base_money):
         draw_earn_money(self.earn_money_list[0], base_money * 10000, self.work_dir, self.name + '收益图', False)
 
     def __draw_picture2(self, list_legends, base_money):
-        draw_list_earn_money(self.earn_money_list, list_legends, base_money * 10000, self.work_dir, self.name + '收益图', True)
+        draw_list_earn_money(self.earn_money_list, list_legends, base_money * 10000, self.work_dir, self.name + '收益图',
+                             True)
 
     def select_stocks(self, data_list):
         for data in data_list:
@@ -281,7 +281,8 @@ class Strategy:
         for idx, data in enumerate(data_list):
             data['当日排名'] = idx + 1
         return self._count_stock_earn_money(
-            data_list, self.cm.get_config_value('每日资金总量') * 10000, self.cm.get_config_value('尾部资金') * 10000, normal_mode)
+            data_list, self.cm.get_config_value('每日资金总量') * 10000, self.cm.get_config_value('尾部资金') * 10000,
+            normal_mode)
 
     def _count_stock_earn_money(self, data_list, total_money, retain_money, normal_mode):
         total_earn_money = 0
