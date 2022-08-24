@@ -26,8 +26,10 @@ class Strategy20cm(Strategy):
                 data['可买金额'] = 150 * 10000
             elif data['原始金额'] < 6000:
                 data['可买金额'] = 250 * 10000
-            elif data['原始金额'] < 20000:
+            elif data['原始金额'] < 15000:
                 data['可买金额'] = int(orig_money / 20)
+            elif data['原始金额'] < 20000:
+                data['可买金额'] = int(orig_money / 25)
             else:
                 data['可买金额'] = int(orig_money / 30)
 
@@ -94,7 +96,7 @@ if __name__ == '__main__':
                                     {},
                                     ['日期', '代码', '名称', '原始金额', '可买金额', '盈亏金额', '盈亏比', '计划买入金额', '实际买入金额', '实际盈亏金额',
                                      '5日涨停数', '6日涨停数', '7日涨停数', '连扳数', '次日下午成交额', '当日排名', '淘汰原因'],
-                                    ['买入量', '卖出日期'], 20220812, 1)
+                                    ['买入量', '卖出日期'], 20220812, 800)
 
     zhuiban_strategy.set_data_filter(lambda data: data['代码'][2:4] not in ['60', '00'])
     zhuiban_strategy.set_sort_data_list(zhuiban_strategy.sort_data_list_by_time)
