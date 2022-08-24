@@ -21,6 +21,8 @@ Begin
         begin
             昨日收盘价 := ref(close(), 1);
             今日涨停价 := StockZtClose(day);
+            next_day := StockEndTPrevNDay(day, -1);
+            明日涨停价 := StockZtClose(next_day);
         end
 
         if stock_code[3:4] = '30' or stock_code[3:4] = '68' then
@@ -51,11 +53,12 @@ Begin
         涨停 := 计算涨停板(stock_code, day);
         最高价 := 计算最高价(stock_name, stock_code, 上涨起点);
         涨幅 := 计算涨幅(stock_name, stock_code, day, 70);
-        买入金额 := 计算买入量(stock_name, stock_code, day, 6);
+        原始金额 := 计算原始金额(stock_name, stock_code, day, 6);
         买入量 := int(买入金额/今日涨停价);
         首板新高 := 计算100日首板新高(stock_name, stock_code, day);
+        次日下午成交额 := 计算次日下午成交额(stock_name, stock_code, next_day, 明日涨停价);
         ret &= array(('名称':stock_name, '代码':stock_code,
-                '买入价':买入[0], '买入时间':买入[1], '当日已成交金额':买入[2], '买入量':买入量,
+                '买入价':买入[0], '买入时间':买入[1], '当日已成交金额':买入[2], '原始金额':原始金额,
                 '买入价涨幅3':count_ratio(买入[0], 最高价[0]),
                 '买入价涨幅5':count_ratio(买入[0], 最高价[1]),
                 '买入价涨幅7':count_ratio(买入[0], 最高价[2]),
@@ -70,10 +73,31 @@ Begin
                 '100日内出现5日涨幅超70':涨幅[0],
                 '200日内出现5日涨幅超70':涨幅[1],
                 '100日首板新高':首板新高, '上涨起点日': 上涨起点日,
+                '次日下午成交额':int(次日下午成交额/10000)
                 ));
     end;
     return exportjsonstring(ret);
 End;
+
+function 计算次日下午成交额(stock_name, stock_code, next_day, 明日涨停价);
+begin
+    with *,array(pn_Stock():stock_code, pn_date():next_day, pn_rate():2, pn_rateday():next_day, PN_Cycle():cy_1m()) do
+    begin
+        data := select
+        TimeToStr(["date"]) as "时间",
+        ["close"],
+        ['amount']
+        from markettable datekey next_day+StrToTime("13:25:00") to next_day+StrToTime("13:55:00") of DefaultStockID() end;
+    end
+
+    sum_amount := 0;
+    for idx in data do
+    begin
+        if data[idx]['close'] <> 明日涨停价 then
+            sum_amount += data[idx]['amount'];
+    end
+    return sum_amount;
+end
 
 function 计算自定义上市天数(stock_code, day);
 begin
@@ -165,7 +189,7 @@ begin
     return 回溯天数 - 1;
 end
 
-function 计算买入量(stock_name, stock_code, day, num);
+function 计算原始金额(stock_name, stock_code, day, num);
 begin
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
     begin
