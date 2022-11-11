@@ -33,22 +33,20 @@ class Strategy20cm(Strategy):
             else:
                 data['可买金额'] = int(orig_money / 30)
 
-    """
     def select_stocks(self, data_list):
         for data in data_list:
             data['淘汰原因'] = ''
 
+            if data['3日涨停数'] == 0 and data['5日涨停数'] != 0:
+                data['淘汰原因'] = '涨停中断'
+                continue
+            """
             range_kai_pan_jia = self.cm.get_config_value('开盘价涨幅范围')
             if range_kai_pan_jia:
                 price_pair = range_kai_pan_jia.split('~')
 
                 if not float(price_pair[0]) <= data['开盘价涨幅'] <= float(price_pair[1]):
-                    data['淘汰原因'] = '开盘价涨幅'
-
-            if data['连扳数'] < 2 and data['100日内出现5日涨幅超70'] == 1:
-                data['淘汰原因'] = '100日内出现5日涨幅超70'
-                continue
-    """
+                    data['淘汰原因'] = '开盘价涨幅'"""
 
     def sort_data_list_by_time(self, data_list):
         data_list.sort(key=cmp_to_key(com_function))
@@ -59,7 +57,8 @@ class Strategy20cm(Strategy):
 
         for rank, data in enumerate(data_list):
             if rank + 1 > max_buy_rank:
-                data['淘汰原因'] = '买入排名'
+                if not data['淘汰原因']:
+                    data['淘汰原因'] = '买入排名'
 
 
 def com_function(data1, data2):
@@ -83,20 +82,20 @@ if __name__ == '__main__':
                                     '追板策略股票池.csv',
                                     {'日期': str, '代码': str, '名称': str,
                                      '买入价': float, '买入时间': str, '原始金额': float, '当日已成交金额': float,
-                                     '5日涨停数': int, '6日涨停数': int, '7日涨停数': int,
+                                     '3日涨停数': int, '5日涨停数': int, '6日涨停数': int, '7日涨停数': int,
                                      '次日下午成交额': float
                                      },
                                     'zhuiban.js',
                                     {},
                                     '每日股票信息.csv',
                                     {
-                                     '连扳数': int
-                                     },
+                                        '连扳数': int
+                                    },
                                     'stock_info_day.js',
                                     {},
                                     ['日期', '代码', '名称', '原始金额', '可买金额', '盈亏金额', '盈亏比', '计划买入金额', '实际买入金额', '实际盈亏金额',
                                      '5日涨停数', '6日涨停数', '7日涨停数', '连扳数', '次日下午成交额', '当日排名', '淘汰原因'],
-                                    ['买入量', '卖出日期'], 20220812, 800)
+                                    ['买入量', '卖出日期'], 20221108, 850)
 
     zhuiban_strategy.set_data_filter(lambda data: data['代码'][2:4] not in ['60', '00'])
     zhuiban_strategy.set_sort_data_list(zhuiban_strategy.sort_data_list_by_time)
