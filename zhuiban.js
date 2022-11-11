@@ -352,9 +352,14 @@ begin
         data := select
         TimeToStr(["date"]) as "时间",
         ["close"],
-        ['amount']
+        ['amount'],
+        ['open'],
+        ['low']
         from markettable datekey day to day+0.99999 of DefaultStockID() end;
     end
+
+    if data[0]['low'] <> 当日涨停价 and data[0]['close'] = 当日涨停价 then
+        return array(当日涨停价, data[0]['time'], 0);
 
     第一个非涨停价 := 0;
     for idx in data do
