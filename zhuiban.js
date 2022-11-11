@@ -359,7 +359,7 @@ begin
     end
 
     if data[0]['low'] <> 当日涨停价 and data[0]['close'] = 当日涨停价 then
-        return array(当日涨停价, data[0]['time'], 0);
+        return array(当日涨停价, data[0]['时间'], 0);
 
     第一个非涨停价 := 0;
     for idx in data do
