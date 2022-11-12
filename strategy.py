@@ -275,6 +275,7 @@ class Strategy:
     def select_stocks(self, data_list):
         for data in data_list:
             data['淘汰原因'] = ''
+            data['是否买入'] = 0
 
     def count_stock_earn_money(self, data_list, normal_mode):
         self.sort_data_list(data_list)
