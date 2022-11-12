@@ -41,7 +41,7 @@ class Strategy:
             self.csv_field_names += self.stock_info_cache.keys()
 
         self.csv_field_names += csv_field_names + ['卖出价', '卖出日期', '可买金额',
-                                                   '盈亏金额', '盈亏比', '计划买入金额', '实际买入金额',
+                                                   '计划买入盈亏金额', '盈亏比', '计划买入金额', '实际买入金额',
                                                    '实际盈亏金额']
 
         list_fileds = self.csv_field_names.copy()
@@ -239,7 +239,7 @@ class Strategy:
                 data['计划买入金额'] = use_money_per_stock
 
             data['盈亏比'] = round((data['卖出价'] / data['买入价'] - 1) * 100, 2)
-            data['盈亏金额'] = data['盈亏比'] * data['可买金额'] / 100
+            data['计划买入盈亏金额'] = data['盈亏比'] * data['计划买入金额'] / 100
 
     def __write_csv(self, data_list):
         if not self.fd:
@@ -259,7 +259,7 @@ class Strategy:
 
             data_to_write['买入价'] = round(data_to_write['买入价'], 3)
             data_to_write['可买金额'] = round(data_to_write['可买金额'] / 10000, 2)
-            data_to_write['盈亏金额'] = round(data_to_write['盈亏金额'] / 10000, 2)
+            data_to_write['计划买入盈亏金额'] = round(data_to_write['计划买入盈亏金额'] / 10000, 2)
             data_to_write['计划买入金额'] = round(data_to_write['计划买入金额'] / 10000, 2)
             data_to_write['实际买入金额'] = round(data_to_write['实际买入金额'] / 10000, 2)
             data_to_write['实际盈亏金额'] = round(data_to_write['实际盈亏金额'] / 10000, 2)
@@ -298,6 +298,7 @@ class Strategy:
                     data['实际买入金额'] = data['计划买入金额']
 
                 data['实际买入金额'] *= buy_vol_ratio / 100
+                data['是否买入'] = 1
 
                 if data['代码'][0:2] == 'SH':
                     service_fee = 上交所手续费
