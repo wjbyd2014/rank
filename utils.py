@@ -1,10 +1,16 @@
-def guiyihua(list_data):
+def guiyihua(list_data, key):
+    if not list_data:
+        return []
+
     ret = list()
-    min_ = min(list_data)
-    max_ = max(list_data)
+    min_ = min([data[key] for data in list_data])
+    max_ = max([data[key] for data in list_data])
+
+    if min_ == max_:
+        return [0] * len(list_data)
 
     for data in list_data:
-        ret.append((data - min_) / (max_ - min_))
+        ret.append((data[key] - min_) / (max_ - min_))
 
     return ret
 
