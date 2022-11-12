@@ -83,6 +83,7 @@ Begin
 
             ret &= array(('名称':stock_name, '代码':stock_code,
                 '昨日涨幅':昨日涨幅, '相对大盘涨幅':相对大盘涨幅,
+                '上市天数':上市天数,
                 '昨日成交金额':昨日成交金额, '过去2到10天最大成交金额':过去2到10天最大成交金额,
                 '7日涨停数':涨停[0], '10日涨停数':涨停[1], '15日涨停数':涨停[2],
                 '创10日新高':创10日新高, '创15日新高':创15日新高,
@@ -296,7 +297,7 @@ function count_缩量(i);
 begin
     当日成交量 := ref(vol(), i);
     前N日平均成交量 := ref(ma(vol(), 5), i + 1);
-    量比 := count_ratio(当日成交量, 前N日平均成交量);
+    量比 := 当日成交量 / 前N日平均成交量 * 100;
     return 量比 < 50;
 end
 
@@ -315,7 +316,7 @@ begin
         if DateToInt(prev_day) < 上市日 then
             break;
 
-        if one_day < before_day then
+        if prev_day < before_day then
             break;
 
         if StockIsZt2(prev_day) then
