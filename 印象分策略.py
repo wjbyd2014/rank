@@ -3,7 +3,7 @@ from strategy import *
 
 
 def sort_data_list(data_list):
-    data_list.sort(key=lambda x: x['score'])
+    data_list.sort(key=lambda x: x['score'], reverse=True)
 
 
 class StrategyYinXiang(Strategy):
@@ -43,11 +43,30 @@ class StrategyYinXiang(Strategy):
     def select_stocks(self, data_list):
         super().select_stocks(data_list)
 
+        for data in data_list:
+            if data['换手率比'] < 0.8:
+                data['淘汰原因'] = '换手率比'
+                break
+            elif data['昨日成交金额'] < 400000000:
+                data['淘汰原因'] = '昨日成交金额'
+                break
+            elif data['过去2到10天最大成交金额'] < 400000000:
+                data['淘汰原因'] = '过去2到10天最大成交金额'
+                break
+            elif data['10日涨停数'] <= 0:
+                data['淘汰原因'] = '10日涨停数'
+                break
+
 
 if __name__ == '__main__':
     yinxiang_strategy = StrategyYinXiang('印象分策略',
                                          'D:\\ts\\',
-                                         ['当日排名', '淘汰原因', '印象分打分', '阳线实体打分', '相对大盘涨幅打分', '换手率打分', '买入价'],
+                                         ['当日排名', '淘汰原因',
+                                          'score', '印象打分',
+                                          '阳线实体打分',
+                                          '相对大盘涨幅打分',
+                                          '换手率比打分',
+                                          '换手率比', '买入价', '是否买入'],
                                          '印象分策略股票池.csv',
                                          {'日期': str, '代码': str, '名称': str,
                                           '昨日涨幅': float, '相对大盘涨幅': float, '昨日成交金额': float, '过去2到10天最大成交金额': float,
@@ -57,6 +76,7 @@ if __name__ == '__main__':
                                           '开盘涨幅': float, '开盘价': float, '买入量': float,
                                           '昨日换手率': float, '历史最高换手率': float, '历史最高换手率日': str,
                                           '印象': float, '阳线实体': float,
+                                          '上市天数': float
                                           },
                                          'yinxiang.js',
                                          {}, '', {}, '', {},
@@ -72,7 +92,7 @@ if __name__ == '__main__':
     yinxiang_strategy.add_factor2('每日资金总量', [6000])
     yinxiang_strategy.add_factor2('单只股票购买上限', [1600])
     yinxiang_strategy.add_factor2('买入比', [100])
-    yinxiang_strategy.add_factor2('尾部资金', [0])
+    yinxiang_strategy.add_factor2('尾部资金', [1])
     yinxiang_strategy.gen_factors()
 
     len_factors = yinxiang_strategy.len_factors()
