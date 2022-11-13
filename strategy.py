@@ -316,8 +316,7 @@ class Strategy:
                     left_money = 0
             else:
                 data['实际买入金额'] = data['实际盈亏金额'] = 0
-                if not normal_mode:
-                    break
+
         return total_earn_money, total_use_money, left_money
 
     def get_data(self):
