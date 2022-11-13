@@ -20,8 +20,8 @@ class StrategyYinXiang(Strategy):
         super().__del__()
 
     def pre_count_buy_amount(self, data_list):
+        super().pre_count_buy_amount(data_list)
         for data in data_list:
-            data['可买金额'] = 1000 * 10000
             data['买入价'] = data['开盘价']
             if data['历史最高换手率'] == 0:
                 data['换手率比'] = 0
@@ -44,16 +44,16 @@ class StrategyYinXiang(Strategy):
         super().select_stocks(data_list)
 
         for data in data_list:
-            if data['换手率比'] < 0.8:
+            if data['换手率比'] < self.cm.get_config_value('最小换手率比'):
                 data['淘汰原因'] = '换手率比'
                 break
-            elif data['昨日成交金额'] < 400000000:
+            elif data['昨日成交金额'] < self.cm.get_config_value('最小昨日成交金额'):
                 data['淘汰原因'] = '昨日成交金额'
                 break
-            elif data['过去2到10天最大成交金额'] < 400000000:
+            elif data['过去2到10天最大成交金额'] < self.cm.get_config_value('最小过去2到10天最大成交金额'):
                 data['淘汰原因'] = '过去2到10天最大成交金额'
                 break
-            elif data['10日涨停数'] <= 0:
+            elif data['10日涨停数'] <= self.cm.get_config_value('最小10日涨停数'):
                 data['淘汰原因'] = '10日涨停数'
                 break
 
@@ -93,6 +93,10 @@ if __name__ == '__main__':
     yinxiang_strategy.add_factor2('单只股票购买上限', [1600])
     yinxiang_strategy.add_factor2('买入比', [100])
     yinxiang_strategy.add_factor2('尾部资金', [1])
+    yinxiang_strategy.add_factor2('最小换手率比', [0.8])
+    yinxiang_strategy.add_factor2('最小昨日成交金额', [400000000])
+    yinxiang_strategy.add_factor2('最小过去2到10天最大成交金额', [400000000])
+    yinxiang_strategy.add_factor2('最小10日涨停数', [1])
     yinxiang_strategy.gen_factors()
 
     len_factors = yinxiang_strategy.len_factors()
