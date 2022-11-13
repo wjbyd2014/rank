@@ -231,7 +231,7 @@ class Strategy:
         use_money_per_stock = self.cm.get_config_value('单只股票购买上限') * 10000
 
         for data in data_list:
-            if not data['可买金额']:
+            if '可买金额' not in data:
                 data['可买金额'] = round(data['买入价'] * data['实际买入量'])
 
             data['计划买入金额'] = data['可买金额']
