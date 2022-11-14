@@ -60,6 +60,8 @@ class StrategyYinXiang(Strategy):
                 break
             elif data['上市天数'] < self.cm.get_config_value('最小上市天数'):
                 data['淘汰原因'] = '上市天数'
+            elif data['创15日新高'] == 0:
+                data['淘汰原因'] = '创15日新高'
 
 
 if __name__ == '__main__':
