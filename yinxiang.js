@@ -290,6 +290,8 @@ begin
         sum_amount += data[idx]['amount'];
     end
     RestoreSystemParameters(param);
+    if sum_vol = 0 then
+        return 0;
     return sum_amount / sum_vol;
 end
 
@@ -327,7 +329,7 @@ begin
 
         one_day_close := StockClose(one_day);
         prev_day_price := count_黄线(stock_code, prev_day);
-        if one_day_close <= prev_day_price then
+        if one_day_close <= prev_day_price or prev_day_price = 0 then
             break;
         else
             score := count_ratio(one_day_close, prev_day_price);
