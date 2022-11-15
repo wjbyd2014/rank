@@ -54,7 +54,6 @@ Begin
         最高价 := 计算最高价(stock_name, stock_code, 上涨起点);
         涨幅 := 计算涨幅(stock_name, stock_code, day, 70);
         原始金额 := 计算原始金额(stock_name, stock_code, day, 6);
-        买入量 := int(买入金额/今日涨停价);
         首板新高 := 计算100日首板新高(stock_name, stock_code, day);
         次日下午成交额 := 计算次日下午成交额(stock_name, stock_code, next_day, 明日涨停价);
         ma5上涨起始日 := count_ma_start_day(day, stock_code, 5);
@@ -159,9 +158,9 @@ begin
             end
             else
                 break;
+        end
+        return StockEndTPrevNDay(day, i - 1);
     end
-    end
-    return StockEndTPrevNDay(day, i - 1);
 end
 
 function 计算次日下午成交额(stock_name, stock_code, next_day, 明日涨停价);
@@ -253,7 +252,7 @@ begin
         begin
             日期1 := DateToStr(StockEndTPrevNDay(day, 回溯天数)); // 回溯日
             回溯日 := StockEndTPrevNDay(day, 回溯天数);
-            
+
             if 回溯日 = 上市日 then
             begin
                 return 回溯天数;
