@@ -57,8 +57,14 @@ Begin
         买入量 := int(买入金额/今日涨停价);
         首板新高 := 计算100日首板新高(stock_name, stock_code, day);
         次日下午成交额 := 计算次日下午成交额(stock_name, stock_code, next_day, 明日涨停价);
+        ma5上涨起始日 := count_ma_start_day(day, stock_code, 5);
+        str_ma5上涨起始日 := DateToStr(ma5上涨起始日);
+        本轮上涨幅度 := 计算本轮上涨幅度(ma5上涨起始日, stock_code, day);
+        本轮上涨涨停板个数 := 计算本轮上涨涨停板个数(ma5上涨起始日, stock_code, day);
         ret &= array(('名称':stock_name, '代码':stock_code,
                 '买入价':买入[0], '买入时间':买入[1], '当日已成交金额':买入[2], '原始金额':原始金额,
+                '涨停拉升':买入[3], 'ma5上涨起始日':str_ma5上涨起始日,
+                '本轮上涨幅度':本轮上涨幅度, '本轮上涨涨停板个数':本轮上涨涨停板个数,
                 '买入价涨幅3':count_ratio(买入[0], 最高价[0]),
                 '买入价涨幅5':count_ratio(买入[0], 最高价[1]),
                 '买入价涨幅7':count_ratio(买入[0], 最高价[2]),
@@ -78,6 +84,85 @@ Begin
     end;
     return exportjsonstring(ret);
 End;
+
+function 计算本轮上涨涨停板个数(before_day, stock_code, day);
+begin
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
+    begin
+        str_before_day := DateToStr(before_day);
+        上市日 := FundGoMarketDate();
+        i := 1;
+        ret := 0;
+        while True do
+        begin
+            one_day := StockEndTPrevNDay(day, i);
+            str_one_day := datetostr(one_day);
+            if DateToInt(one_day) < 上市日 then
+                break;
+
+            if one_day < before_day then
+                break;
+
+            if StockIsZt(one_day) then
+                ret += 1;
+            i += 1;
+        end
+    end
+    return ret;
+end
+
+function 计算本轮上涨幅度(before_day, stock_code, day);
+begin
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
+    begin
+        str_before_day := DateToStr(before_day);
+        上市日 := FundGoMarketDate();
+        i := 1;
+        ret := 0;
+        while True do
+        begin
+            one_day := StockEndTPrevNDay(day, i);
+            str_one_day := datetostr(one_day);
+            if DateToInt(one_day) < 上市日 then
+                break;
+
+            if one_day < before_day then
+                break;
+            i += 1;
+        end
+        昨日收盘价 := StockClose(StockEndTPrevNDay(day, 1));
+        上涨起始日收盘价 := StockClose(StockEndTPrevNDay(day, i - 1));
+    end
+    return count_ratio(昨日收盘价, 上涨起始日收盘价);
+end
+
+function count_ma_start_day(day, stock_code, num);
+begin
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
+    begin
+        上市日 := FundGoMarketDate();
+        ret := 0;
+        i := 2;
+        last_ma := ref(ma(close(), num), 1);
+        while True do
+        begin
+            one_day := StockEndTPrevNDay(day, i);
+            if DateToInt(one_day) < 上市日 then
+                break;
+
+            one_day_close := StockClose(one_day);
+            one_ma := ref(ma(close(), num), i);
+            if one_ma <= last_ma then
+            begin
+                i += 1;
+                last_ma := one_ma;
+            end
+            else
+                break;
+    end
+    end
+    return StockEndTPrevNDay(day, i - 1);
+end
 
 function 计算次日下午成交额(stock_name, stock_code, next_day, 明日涨停价);
 begin
@@ -359,8 +444,9 @@ begin
     end
 
     if data[0]['low'] <> 当日涨停价 and data[0]['close'] = 当日涨停价 then
-        return array(当日涨停价, data[0]['时间'], 0);
+        return array(当日涨停价, data[0]['时间'], 0, 0);
 
+    涨停拉升 := 0;
     第一个非涨停价 := 0;
     for idx in data do
     begin
@@ -374,12 +460,23 @@ begin
             begin
                 buy_price := data[idx]['close'];
                 buy_time := data[idx]['时间'];
+
+                while True do
+                begin
+                    if idx = 0 then
+                        break;
+                    if data[idx]['close'] >= data[idx - 1]['close'] then
+                        idx -= 1;
+                    else
+                        break;
+                end
+                涨停拉升 := count_ratio(当日涨停价, data[idx]['close']);
                 break;
             end
         end
         buy_amount += data[idx]['amount'];
     end
-    return array(buy_price, buy_time, int(buy_amount/10000));
+    return array(buy_price, buy_time, int(buy_amount/10000), 涨停拉升);
 end
 
 
