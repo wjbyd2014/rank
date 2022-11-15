@@ -53,7 +53,11 @@ Begin
         涨停 := 计算涨停板(stock_code, day);
         最高价 := 计算最高价(stock_name, stock_code, 上涨起点);
         涨幅 := 计算涨幅(stock_name, stock_code, day, 70);
-        原始金额 := 计算原始金额(stock_name, stock_code, day, 6);
+        金额 := 计算原始金额(stock_name, stock_code, day, 6);
+        原始金额 := 金额[0];
+        原始金额2 := 金额[1];
+        if 原始金额2 = 0 then
+            continue;
         首板新高 := 计算100日首板新高(stock_name, stock_code, day);
         次日下午成交额 := 计算次日下午成交额(stock_name, stock_code, next_day, 明日涨停价);
         ma5上涨起始日 := count_ma_start_day(day, stock_code, 5);
@@ -61,7 +65,8 @@ Begin
         本轮上涨幅度 := 计算本轮上涨幅度(ma5上涨起始日, stock_code, day);
         本轮上涨涨停板个数 := 计算本轮上涨涨停板个数(ma5上涨起始日, stock_code, day);
         ret &= array(('名称':stock_name, '代码':stock_code,
-                '买入价':买入[0], '买入时间':买入[1], '当日已成交金额':买入[2], '原始金额':原始金额,
+                '买入价':买入[0], '买入时间':买入[1], '当日已成交金额':买入[2],
+                '原始金额':原始金额, '原始金额2':原始金额,
                 '涨停拉升':买入[3], 'ma5上涨起始日':str_ma5上涨起始日,
                 '本轮上涨幅度':本轮上涨幅度, '本轮上涨涨停板个数':本轮上涨涨停板个数,
                 '买入价涨幅3':count_ratio(买入[0], 最高价[0]),
@@ -279,7 +284,7 @@ begin
     begin
         data := ref(nday(num, '时间', datetimetostr(sp_time()), '成交金额',amount()), 1);
         if data = 0 or length(data) = 1 then
-            return 0;
+            return array(0, 0);
 
         num_amount := 0;
         sum_amount := 0;
@@ -300,14 +305,16 @@ begin
     end
 
     if num_amount = 0 then
-        return 0;
+        return array(0, 0);
 
+    ori_sum_amount := sum_amount;
+    ori_num_amount := num_amount;
     if num_amount > 1 then
     begin
         sum_amount -= max_amount;
         num_amount -= 1;
     end
-    return int(sum_amount / num_amount);
+    return array(int(sum_amount / num_amount), int(ori_sum_amount / ori_num_amount));
 end
 
 function 计算100日首板新高(stock_name, stock_code, day);
