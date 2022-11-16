@@ -22,6 +22,7 @@ class StrategyYinXiang(Strategy):
     def pre_count_buy_amount(self, data_list):
         super().pre_count_buy_amount(data_list)
         for data in data_list:
+            data['实际买入量'] = round(data['买入量'] * self.cm.get_config_value('买入量比'))
             data['买入价'] = data['开盘价']
             if data['历史最高换手率'] == 0:
                 data['换手率比'] = 0
@@ -105,15 +106,16 @@ if __name__ == '__main__':
     yinxiang_strategy.add_factor2('单只股票购买上限', [1600])
     yinxiang_strategy.add_factor2('买入比', [100])
     yinxiang_strategy.add_factor2('尾部资金', [1])
+    yinxiang_strategy.add_factor2('买入量比', [0.2])
     yinxiang_strategy.add_factor2('最小换手率比', [0.8])
     yinxiang_strategy.add_factor2('最小昨日成交金额', [400000000])
     yinxiang_strategy.add_factor2('最小过去2到10天最大成交金额', [400000000])
     yinxiang_strategy.add_factor2('最小10日涨停数', [1])
     yinxiang_strategy.add_factor2('最小上市天数', [0])
     yinxiang_strategy.add_factor2('印象分系数', [1])
-    yinxiang_strategy.add_factor2('相对大盘涨幅系数', [7.5])
+    yinxiang_strategy.add_factor2('相对大盘涨幅系数', [9])
     yinxiang_strategy.add_factor2('换手率比系数', [1.5])
-    yinxiang_strategy.add_factor2('阳线实体系数', [2.5])
+    yinxiang_strategy.add_factor2('阳线实体系数', [2])
     yinxiang_strategy.gen_factors()
 
     len_factors = yinxiang_strategy.len_factors()
