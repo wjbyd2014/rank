@@ -30,8 +30,6 @@ Begin
             if count_ratio(今日涨停价, 昨日收盘价) < 15 then
                 continue;
         end
-        else
-            continue;
 
         买入 := 计算买入(stock_name, stock_code, day);
         if 买入[0] = 0 then
