@@ -61,6 +61,7 @@ Begin
         str_ma5上涨起始日 := DateToStr(ma5上涨起始日);
         本轮上涨幅度 := 计算本轮上涨幅度(ma5上涨起始日, stock_code, day);
         本轮上涨涨停板个数 := 计算本轮上涨涨停板个数(ma5上涨起始日, stock_code, day);
+        连板数 := 计算连板(stock_code, day);
         ret &= array(('名称':stock_name, '代码':stock_code,
                 '买入价':买入[0], '买入时间':买入[1], '当日已成交金额':买入[2],
                 '原始金额':原始金额,
@@ -80,11 +81,32 @@ Begin
                 '100日内出现5日涨幅超70':涨幅[0],
                 '200日内出现5日涨幅超70':涨幅[1],
                 '100日首板新高':首板新高, '上涨起点日': 上涨起点日,
-                '次日下午成交额':int(次日下午成交额/10000)
+                '次日下午成交额':int(次日下午成交额/10000),
+                '连扳数':连板数
                 ));
     end;
     return exportjsonstring(ret);
 End;
+
+function 计算连板(stock_code, day);
+begin
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
+    begin
+        ret := 0;
+        i := 1;
+        while True do
+        begin
+            if StockIsZt(StockEndTPrevNDay(day, i)) then
+            begin
+                ret += 1;
+                i += 1;
+            end
+            else
+                break;
+        end
+    end
+    return ret;
+end
 
 function 计算本轮上涨涨停板个数(before_day, stock_code, day);
 begin
