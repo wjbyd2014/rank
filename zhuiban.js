@@ -30,6 +30,8 @@ Begin
             if count_ratio(今日涨停价, 昨日收盘价) < 15 then
                 continue;
         end
+        else
+            continue;
 
         买入 := 计算买入(stock_name, stock_code, day);
         if 买入[0] = 0 then
@@ -49,14 +51,11 @@ Begin
             end
         end
         上涨起点日 := DateToStr(上涨起点);
-
         涨停 := 计算涨停板(stock_code, day);
         最高价 := 计算最高价(stock_name, stock_code, 上涨起点);
         涨幅 := 计算涨幅(stock_name, stock_code, day, 70);
-        金额 := 计算原始金额(stock_name, stock_code, day, 6);
-        原始金额 := 金额[0];
-        原始金额2 := 金额[1];
-        if 原始金额2 = 0 then
+        原始金额 := 计算原始金额(stock_name, stock_code, day, 6);
+        if 原始金额 = 0 then
             continue;
         首板新高 := 计算100日首板新高(stock_name, stock_code, day);
         次日下午成交额 := 计算次日下午成交额(stock_name, stock_code, next_day, 明日涨停价);
@@ -66,7 +65,7 @@ Begin
         本轮上涨涨停板个数 := 计算本轮上涨涨停板个数(ma5上涨起始日, stock_code, day);
         ret &= array(('名称':stock_name, '代码':stock_code,
                 '买入价':买入[0], '买入时间':买入[1], '当日已成交金额':买入[2],
-                '原始金额':原始金额, '原始金额2':原始金额2,
+                '原始金额':原始金额,
                 '涨停拉升':买入[3], 'ma5上涨起始日':str_ma5上涨起始日,
                 '本轮上涨幅度':本轮上涨幅度, '本轮上涨涨停板个数':本轮上涨涨停板个数,
                 '买入价涨幅3':count_ratio(买入[0], 最高价[0]),
@@ -178,7 +177,6 @@ begin
         ['amount']
         from markettable datekey next_day+StrToTime("13:25:00") to next_day+StrToTime("13:55:00") of DefaultStockID() end;
     end
-
     sum_amount := 0;
     for idx in data do
     begin
@@ -196,19 +194,15 @@ begin
         上市日 := FundGoMarketDate();
         if 当前日 = 上市日 then
             return 0;
-
         上市天数 := StockGoMarketDays();
         assert(上市天数 > 0);
-
         num := 1;
         while true do
         begin
             下一日 := StockEndTPrevNDay(IntToDate(上市日), -num);
             str_next_day := DateToStr(下一日);
-
             if 下一日 = day then
                 return 0;
-
             if stockiszt2(下一日) then
                 num += 1;
             else
@@ -224,7 +218,6 @@ begin
     for i := 1 to 创几日新高 - 1 do
     begin
         日期3 := DateToStr(StockEndTPrevNDay(day, i + 回溯天数));
-
         close2 := ref(close(), i + 回溯天数);
         if close1 < close2  then
             return False; // 没创n日新高
@@ -248,27 +241,22 @@ begin
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
     begin
         上市日 := StockFirstDay(stock_code);
-
         if day = 上市日 then
             return 0;
-
         回溯天数 := 1; // 回溯多少天
         while True do
         begin
             日期1 := DateToStr(StockEndTPrevNDay(day, 回溯天数)); // 回溯日
             回溯日 := StockEndTPrevNDay(day, 回溯天数);
-
             if 回溯日 = 上市日 then
             begin
                 return 回溯天数;
             end
-
             if stockiszt(回溯日) then
             begin
                 回溯天数 += 1; // 当日涨停，继续向前回溯
                 continue
             end
-
             if 几日内创过几日新高(stock_name, stock_code, day, 回溯天数, 几日内, 创几日新高) then
                 回溯天数 += 1; // 回溯日n1日内创过n2日新高，继续向前回溯
             else
@@ -278,43 +266,134 @@ begin
     return 回溯天数 - 1;
 end
 
+function 计算开盘集合竞价成交量(stock_name, stock_code, day);
+begin
+    str_day := DateToStr(day);
+    param := BackUpSystemParameters();
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_1m()) do
+    begin
+        data := select
+        TimeToStr(["date"]) as "时间",
+        ['vol']
+        from tradetable datekey day to day+StrToTime("09:31:00") of DefaultStockID() end;
+    end
+    RestoreSystemParameters(param);
+    ret := 0;
+    for idx in data do
+    begin
+        if data[idx]['时间'] >= '09:30:00' then
+            break;
+        ret += data[idx]['vol'];
+    end
+    return ret;
+end
+
 function 计算原始金额(stock_name, stock_code, day, num);
 begin
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
     begin
-        data := ref(nday(num, '时间', datetimetostr(sp_time()), '成交金额',amount()), 1);
-        if data = 0 or length(data) = 1 then
-            return array(0, 0);
+        当日涨停价 := StockZtClose(day);
+        上市日 := FundGoMarketDate();
+    end
 
-        num_amount := 0;
-        sum_amount := 0;
-        max_amount := 0;
-        j := 1;
-        for i := length(data) - 1 downto 0 do
+    minute_amount_num := 0;
+    arr_amount := array();
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_1m()) do
+    begin
+        data := select
+        TimeToStr(["date"]) as "时间",
+        ["close"],
+        ['amount'],
+        ['open'],
+        ['low']
+        from markettable datekey day to day+0.99999 of DefaultStockID() end;
+    end
+
+    if data[0]['low'] <> 当日涨停价 and data[0]['close'] = 当日涨停价 then
+    begin
+        arr_amount &= array(data[0]['amount'] / 3);
+        minute_amount_num += 1;
+    end
+    else
+    begin
+        for i := 0 to length(data) do
         begin
-            if stockiszt2(StockEndTPrevNDay(day, j)) = 0 then
+            if data[i]['close'] = 当日涨停价 then
             begin
-                sum_amount += data[i]['成交金额'];
-                num_amount += 1;
-
-                if data[i]['成交金额'] > max_amount then
-                    max_amount := data[i]['成交金额'];
+                break;
             end
-            j += 1;
+        end
+        arr_amount &= array(data[i]['amount'] / 3);
+        minute_amount_num += 1;
+
+        while length(arr_amount) < 30 do
+        begin
+            i -= 1;
+            if i < 0 then
+                break;
+            arr_amount &= array(data[i]['amount']);
+            minute_amount_num += 1;
         end
     end
 
-    if num_amount = 0 then
-        return array(0, 0);
-
-    ori_sum_amount := sum_amount;
-    ori_num_amount := num_amount;
-    if num_amount > 1 then
+    if length(arr_amount) < 30 then
     begin
-        sum_amount -= max_amount;
-        num_amount -= 1;
+        当日开盘集合竞价 := 计算开盘集合竞价成交量(stock_name, stock_code, day);
+        arr_amount &= array(当日开盘集合竞价);
+        minute_amount_num += 1;
     end
-    return array(int(sum_amount / num_amount), int(ori_sum_amount / ori_num_amount));
+
+    prev_num := 1;
+    str_day := DateToStr(day);
+    while length(arr_amount) < 30 do
+    begin
+        with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
+        begin
+            prev_day := StockEndTPrevNDay(day, prev_num);
+            str_prev_day := DateToStr(prev_day);
+            if prev_day < IntToDate(上市日) then
+                break;
+            昨涨停价 := StockZtClose(prev_day);
+        end
+        with *,array(pn_Stock():stock_code, pn_date():prev_day, pn_rate():2, pn_rateday():prev_day, PN_Cycle():cy_1m()) do
+        begin
+            data_prev_day := select
+            TimeToStr(["date"]) as "时间",
+            ["close"],
+            ['amount']
+        from markettable datekey prev_day to prev_day+0.99999 of DefaultStockID() end;
+        end
+
+        arr_amount &= array(data_prev_day[239]['amount']+data_prev_day[238]['amount']+data_prev_day[237]['amount']);
+        minute_amount_num += 1;
+
+        for i := 236 downto 0 do
+        begin
+            if length(arr_amount) >= 30 then
+                break;
+
+            if data_prev_day[i]['close'] <> 昨涨停价 then
+            begin
+                arr_amount &= array(data_prev_day[i]['amount']);
+                minute_amount_num += 1;
+            end
+        end
+
+        if length(arr_amount) < 30 then
+        begin
+            当日开盘集合竞价 := 计算开盘集合竞价成交量(stock_name, stock_code, prev_day);
+            arr_amount &= array(当日开盘集合竞价);
+            minute_amount_num += 1;
+        end
+        prev_num += 1;
+    end
+
+    sum_minute_amount := 0;
+    for idx in arr_amount do
+    begin
+        sum_minute_amount += arr_amount[idx];
+    end
+    return sum_minute_amount / length(arr_amount);
 end
 
 function 计算100日首板新高(stock_name, stock_code, day);
@@ -325,11 +404,9 @@ begin
         昨日涨停 := StockIsZt(StockEndTPrevNDay(day, 1));
         if 昨日涨停 = 1 then
             return 0;
-
         data := ref(nday(100, '时间', datetimetostr(sp_time()), '收盘价',close()), 1);
         if data = 0 or length(data) <> 100 then
             return 0;
-
         for i := 0 to 100 do
         begin
             if data[i]['收盘价'] >= 当日涨停价 then
@@ -351,7 +428,6 @@ begin
             close4 := ref(close(), i + 3);
             close5 := ref(close(), i + 4);
             close6 := ref(close(), i + 5);
-
             ratio3 := count_ratio(close1, close4);
             ratio4 := count_ratio(close1, close5);
             if ratio4 > ratio then
@@ -359,7 +435,6 @@ begin
                 if count_ratio(close2, close5) > ratio then
                     ratio4 := 0
             end
-
             ratio5 := count_ratio(close1, close6);
             if ratio5 > ratio then
             begin
@@ -368,9 +443,7 @@ begin
                 if count_ratio(close3, close6) > ratio then
                     ratio5 := 0;
             end
-
             str_day := DateToStr(StockEndTPrevNDay(day, i));
-
             if ratio3 > ratio or ratio4 > ratio or ratio5 > ratio then
             begin
                 if i <= 100 then
@@ -390,10 +463,8 @@ begin
         data := ref(nday(60, '时间', datetimetostr(sp_time()), '当日高价',high()), 1);
         if data = 0 then
             return array(0, 0, 0, 0, 0, 0);
-
         data_high := data[:, '当日高价'];
     end
-
     highest := 0;
     num3 := 0;
     num5 := 0;
@@ -403,12 +474,10 @@ begin
     num30 := 0;
     num60 := 0;
     len := length(data);
-
     for i := len - 1 downto 0 do
     begin
         if data_high[i] > highest then
             highest := data_high[i];
-
         if i >= len - 3 then
             num3 := num5 := num7 := num10 := num15 := num30 := num60 := highest;
         else if i >= len - 5 then
@@ -432,12 +501,10 @@ begin
     buy_price := 0;
     buy_time := 0;
     buy_amount := 0;
-
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
     begin
         当日涨停价 := StockZtClose(day);
     end
-
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_1m()) do
     begin
         data := select
@@ -484,7 +551,6 @@ begin
     end
     return array(buy_price, buy_time, int(buy_amount/10000), 涨停拉升);
 end
-
 
 function 计算涨停板(stock_code, day);
 begin
