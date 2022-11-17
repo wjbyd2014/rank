@@ -18,20 +18,8 @@ class Strategy20cm(Strategy):
 
     def pre_count_buy_amount(self, data_list):
         for data in data_list:
-            orig_money = data['原始金额']
-            data['原始金额'] = int(data['原始金额'] / 10000)
-            if data['原始金额'] < 1000:
-                data['可买金额'] = 50 * 10000
-            elif data['原始金额'] < 3000:
-                data['可买金额'] = 100 * 10000
-            elif data['原始金额'] < 6000:
-                data['可买金额'] = 150 * 10000
-            elif data['原始金额'] < 15000:
-                data['可买金额'] = int(orig_money / 60)
-            elif data['原始金额'] < 20000:
-                data['可买金额'] = int(orig_money / 75)
-            else:
-                data['可买金额'] = int(orig_money / 90)
+            data['可买金额'] = data['原始金额'] * 1.5
+            data['原始金额'] = round(data['原始金额'] / 10000)
 
     """def select_stocks(self, data_list):
         for data in data_list:
@@ -90,7 +78,7 @@ if __name__ == '__main__':
                                     ['当日排名', '淘汰原因'],
                                     '追板策略股票池.csv',
                                     {'日期': str, '代码': str, '名称': str,
-                                     '买入价': float, '买入时间': str, '原始金额': float, '原始金额2': float, '当日已成交金额': float,
+                                     '买入价': float, '买入时间': str, '原始金额': float, '当日已成交金额': float,
                                      '2日涨停数': int, '3日涨停数': int, '4日涨停数': int, '5日涨停数': int, '次日下午成交额': float,
                                      '涨停拉升': float, 'ma5上涨起始日': str, '本轮上涨幅度': float, '本轮上涨涨停板个数': int
                                      },
@@ -103,12 +91,12 @@ if __name__ == '__main__':
                                     'stock_info_day.js',
                                     {},
                                     ['日期', '代码', '名称',
-                                     '原始金额', '原始金额2', '可买金额', '盈亏比',
+                                     '原始金额', '可买金额', '盈亏比',
                                      '计划买入金额', '计划买入盈亏金额',
                                      '实际买入金额', '实际盈亏金额',
                                      '是否买入', '当日排名', '淘汰原因',
                                      '买入时间', '买入价', '卖出价', '卖出日期'],
-                                    ['买入量', '备注'], 20221108, 850)
+                                    ['买入量'], 20221108, 850)
 
     zhuiban_strategy.set_data_filter(lambda data: data['代码'][2:4] not in ['60', '00'])
     zhuiban_strategy.set_sort_data_list(zhuiban_strategy.sort_data_list_by_time)
@@ -117,8 +105,8 @@ if __name__ == '__main__':
     zhuiban_strategy.load_data()
     """factors = ConfigManager.linspace2(zhuiban_strategy.get_data(), '开盘价涨幅', 10)
     zhuiban_strategy.add_factor2('开盘价涨幅范围', factors)"""
-    zhuiban_strategy.add_factor2('每日资金总量', [2500])
-    zhuiban_strategy.add_factor2('单只股票购买上限', [750])
+    zhuiban_strategy.add_factor2('每日资金总量', [3000])
+    zhuiban_strategy.add_factor2('单只股票购买上限', [3000])
     # zhuiban_strategy.add_factor2('单只股票购买下限', [200])
     zhuiban_strategy.add_factor2('买入比', [100])
     zhuiban_strategy.add_factor2('尾部资金', [1])
