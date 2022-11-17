@@ -46,9 +46,9 @@ class Strategy20cm(Strategy):
             return
 
         for rank, data in enumerate(data_list):
-            if rank + 1 <= 4:
+            """if rank + 1 <= 4:
                 data['计划买入金额'] = data['计划买入金额'] * 1.2
-                data['计划买入盈亏金额'] = data['盈亏比'] * data['计划买入金额'] / 100
+                data['计划买入盈亏金额'] = data['盈亏比'] * data['计划买入金额'] / 100"""
 
             if data['2日涨停数'] == 0 and data['5日涨停数'] != 0:
                 data['淘汰原因'] = '涨停中断'
