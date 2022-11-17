@@ -299,15 +299,15 @@ begin
         日期1 := DateToStr(StockEndTPrevNDay(day, 回溯天数)); // 回溯日
         回溯日 := StockEndTPrevNDay(day, 回溯天数);
 
+        if 回溯日 = 上市日 then
+        begin
+            return 回溯天数;
+        end
+        
         if stockiszt(回溯日) then
         begin
             回溯天数 += 1; // 当日涨停，继续向前回溯
             continue
-        end
-
-        if 回溯日 = 上市日 then
-        begin
-            return 回溯天数;
         end
 
         if 几日内创过几日新高(stock_name, stock_code, day, 回溯天数, 几日内, 创几日新高) then
