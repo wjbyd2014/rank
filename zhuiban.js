@@ -215,7 +215,11 @@ begin
 
         if flag = 1 then
             break;
-        next_day := StockEndTPrevNDay(next_day, -1);
+
+        with *,array(pn_Stock():stock_code, pn_date():next_day, pn_rate():2, pn_rateday():next_day, PN_Cycle():cy_day()) do
+        begin
+            next_day := StockEndTPrevNDay(next_day, -1);
+        end
     end
 
     sum_amount := 0;
@@ -226,6 +230,7 @@ begin
     end
     return sum_amount;
 end
+
 function 计算自定义上市天数(stock_code, day);
 begin
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
