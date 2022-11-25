@@ -315,7 +315,7 @@ begin
     begin
         data := select
         TimeToStr(["date"]) as "时间",
-        ['vol']
+        ['amount']
         from tradetable datekey day to day+StrToTime("09:31:00") of DefaultStockID() end;
     end
     RestoreSystemParameters(param);
@@ -324,7 +324,7 @@ begin
     begin
         if data[idx]['时间'] >= '09:30:00' then
             break;
-        ret += data[idx]['vol'];
+        ret += data[idx]['amount'];
     end
     return ret;
 end
@@ -555,9 +555,6 @@ begin
         from markettable datekey day to day+0.99999 of DefaultStockID() end;
     end
 
-    if data[0]['low'] <> 当日涨停价 and data[0]['close'] = 当日涨停价 then
-        return array(当日涨停价, data[0]['时间'], 0, 0);
-
     涨停拉升 := 0;
     第一个非涨停价 := 0;
     for idx in data do
@@ -568,6 +565,9 @@ begin
         end
         else
         begin
+            if data[idx]['low'] <> 当日涨停价 then
+                return array(当日涨停价, data[idx]['时间'], 0, 0);
+
             if 第一个非涨停价 <> 0 then
             begin
                 buy_price := data[idx]['close'];
