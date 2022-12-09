@@ -106,8 +106,6 @@ begin
     day4 := '';
     max_incr := 0;
     max_incr_day := 0;
-
-    num := 0;
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
     begin
         ret := 0;
@@ -116,10 +114,6 @@ begin
             one_day := StockEndTPrevNDay(day, i);
             if one_day = 0 then
                 break;
-
-            str_one_day := DateToStr(one_day);
-            if StockIsZt(one_day) then
-                num += 1;
 
             prev_one_day := StockEndTPrevNDay(day, i + 1);
             if prev_one_day = 0 then
