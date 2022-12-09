@@ -22,6 +22,9 @@ class StrategyLongHuiTou(Strategy):
     def select_stocks(self, data_list):
         super().select_stocks(data_list)
 
+    def sort_data_list_by_time(self, data_list):
+        data_list.sort(key=lambda x: x['买入时间'])
+
 
 if __name__ == '__main__':
     longhuitou_strategy = StrategyLongHuiTou('龙回头策略',
@@ -42,9 +45,10 @@ if __name__ == '__main__':
                                              {}, '', {}, '', {},
                                              ['日期', '代码', '名称',
                                               '可买金额', '盈亏比', '计划买入金额', '计划买入盈亏金额', '实际买入金额', '实际盈亏金额',
-                                              '当日排名', '淘汰原因', '是否买入'],
-                                             ['买入量'], 20221208, 300)
+                                              '当日排名', '买入时间', '淘汰原因', '是否买入'],
+                                             ['买入量', '买入金额'], 20221208, 300)
 
+    longhuitou_strategy.set_sort_data_list(longhuitou_strategy.sort_data_list_by_time)
     longhuitou_strategy.init()
     longhuitou_strategy.load_data()
     """factors = ConfigManager.linspace2(yinxiang_strategy.get_data(), '开盘涨幅', 10)
