@@ -114,7 +114,7 @@ begin
             one_day := StockEndTPrevNDay(day, i);
             if one_day = 0 then
                 break;
-                
+
             str_one_day := DateToStr(one_day);
             prev_one_day := StockEndTPrevNDay(day, i + 1);
             if prev_one_day = 0 then
