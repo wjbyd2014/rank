@@ -41,7 +41,7 @@ Begin
                 continue;
         end
         else
-            大涨 := array('', '', '', '', '', '', '', '');
+            大涨 := zeros(8);
 
         上市天数 := 计算自定义上市天数(stock_code, day);
         ret &= array(('名称':stock_name, '代码':stock_code,
