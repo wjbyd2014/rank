@@ -27,6 +27,11 @@ Begin
             prev_zt := StockZtClose(prev_day);
             if prev_high = prev_zt then
                 continue;
+
+            cur_high := StockHigh4(day);
+            cur_zt := StockZtClose(day);
+            if cur_high <> cur_zt then
+                continue;
         end
 
         买入 := 计算买入(stock_name, stock_code, day);
