@@ -16,6 +16,9 @@ Begin
         if not is_trade_day(day, stock_code) then
             continue;
 
+        if stock_code[3:4] = '30' or stock_code[3:4] = '68' then
+            continue;
+
         with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
         begin
             is_zt := IsST_3(day);
@@ -118,6 +121,9 @@ begin
             str_one_day := DateToStr(one_day);
             prev_one_day := StockEndTPrevNDay(day, i + 1);
             if prev_one_day = 0 then
+                break;
+
+            if MonthsBetween(one_day, prev_one_day) > 1 then
                 break;
 
             one_day_high := StockHigh4(one_day);
