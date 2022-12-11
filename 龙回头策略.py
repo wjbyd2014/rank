@@ -34,6 +34,18 @@ if __name__ == '__main__':
                                              {'日期': str, '代码': str, '名称': str,
                                               'is_st': int, '上市天数': float,
                                               '买入时间': str, '买入价': float, '买入金额': float,
+                                              '200日涨停数': int,
+                                              'ma3上涨起始日': str,
+                                              'ma3涨停数量': int,
+                                              'ma3最高价涨停数量': int,
+                                              '4日内最低价跌停次数': int,
+                                              '本日涨停价和10日内最高最高价涨幅': float,
+                                              '10日内最高最高价日期': str,
+                                              '7日内上次涨停日期': str,
+                                              '上次涨停距今几日': int,
+                                              '上次涨停距今最高价最高涨幅': float,
+                                              '上次涨停距今累计涨幅': float,
+                                              '上次涨停距今阳线个数': int,
                                               '10日涨停数': int, '20日涨停数': int,
                                               '30日涨停数': int, '40日涨停数': int,
                                               '10日最大大涨幅度': float, '10日最大大涨日期': str,
@@ -45,15 +57,16 @@ if __name__ == '__main__':
                                              {}, '', {}, '', {},
                                              ['日期', '代码', '名称',
                                               '可买金额', '盈亏比', '计划买入金额', '计划买入盈亏金额', '实际买入金额', '实际盈亏金额',
-                                              '当日排名', '买入时间', '淘汰原因', '是否买入'],
-                                             ['买入量', '买入金额'], 20221208, 300)
+                                              '当日排名', '买入时间', '是否买入'],
+                                             ['买入量', '买入金额', '淘汰原因'], 20221208, 600)
 
+    longhuitou_strategy.set_data_filter(lambda data: data['代码'][2:4] in ['60', '00'])
     longhuitou_strategy.set_sort_data_list(longhuitou_strategy.sort_data_list_by_time)
     longhuitou_strategy.init()
     longhuitou_strategy.load_data()
     """factors = ConfigManager.linspace2(yinxiang_strategy.get_data(), '开盘涨幅', 10)
     yinxiang_strategy.add_factor2('开盘价涨幅范围', factors)"""
-    longhuitou_strategy.add_factor2('每日资金总量', [100000000])
+    longhuitou_strategy.add_factor2('每日资金总量', [100000])
     longhuitou_strategy.add_factor2('单只股票购买上限', [1600])
     longhuitou_strategy.add_factor2('买入比', [100])
     longhuitou_strategy.add_factor2('尾部资金', [1])
