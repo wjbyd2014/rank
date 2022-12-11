@@ -250,13 +250,31 @@ begin
                 num += 1;
 
             if i = 10 then
+            begin
                 num1 := num;
-            else if i = 20 then
                 num2 := num;
-            else if i = 30 then
                 num3 := num;
-            else if i = 40 then
                 num4 := num;
+                num5 := num;
+            end
+            else if i = 20 then
+            begin
+                num2 := num;
+                num3 := num;
+                num4 := num;
+                num5 := num;
+            end
+            else if i = 30 then
+            begin
+                num3 := num;
+                num4 := num;
+                num5 := num;
+            end
+            else if i = 40 then
+            begin
+                num4 := num;
+                num5 := num;
+            end
             else if i = 200 then
                 num5 := num;
         end
