@@ -47,7 +47,7 @@ Begin
             上次涨停信息 := count_last_zt(stock_name, stock_code ,day, 7);
         end
 
-        买入 := 计算买入(stock_name, stock_code, day);
+        买入 := 计算买入(stock_name, stock_code, day, cur_zt);
         if 买入[0] = 0 then
             continue;
 
@@ -63,6 +63,7 @@ Begin
 
         上市天数 := 计算自定义上市天数(stock_code, day);
         ret &= array(('名称':stock_name, '代码':stock_code,
+            '买入时间':买入[1], '买入价':cur_zt, '原始金额':买入[0],
             '本日涨停价和10日内最高最高价涨幅':highest_incr,
             '10日内最高最高价日期':highest10[1],
             '4日内最低价跌停次数':dt_num4,
@@ -75,7 +76,6 @@ Begin
             '上次涨停距今累计涨幅':上次涨停信息[3],
             '上次涨停距今阳线个数':上次涨停信息[4],
             'is_st':is_zt, '上市天数':上市天数,
-            '买入时间':买入[1], '买入价':买入[0], '买入金额':买入[2],
             '10日涨停数':涨停板[0], '20日涨停数':涨停板[1],
             '30日涨停数':涨停板[2], '40日涨停数':涨停板[3],
             '10日最大大涨幅度':大涨[0], '10日最大大涨日期':大涨[1],
@@ -346,47 +346,58 @@ begin
     end
 end
 
-function 计算买入(stock_name, stock_code, day);
+function time_diff(time1, time2);
 begin
-    buy_price := 0;
-    buy_time := 0;
+    hour1 := StrToInt(time1[1:2]);
+    min1 := StrToInt(time1[4:5]);
+    sec1 := StrToInt(time1[7:8]);
 
-    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
-    begin
-        当日涨停价 := StockZtClose(day);
-    end
+    hour2 := StrToInt(time2[1:2]);
+    min2 := StrToInt(time2[4:5]);
+    sec2 := StrToInt(time2[7:8]);
 
-    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_1m()) do
+    ret := hour1 * 3600 + min1 * 60 + sec1 - hour2 * 3600 - min2 * 60 - sec2;
+    return ret;
+end
+
+function 计算买入(stock_name, stock_code, day, cur_zt);
+begin
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_3s()) do
     begin
         data := select
         TimeToStr(["date"]) as "时间",
         ["close"],
-        ['amount'],
-        ['low']
-        from markettable datekey day to day+0.99999 of DefaultStockID() end;
+        ['low'],
+        ['high'],
+        ['amount']
+        from tradetable datekey day to day+0.99999 of DefaultStockID() end;
     end
 
-    第一个非涨停价 := 0;
+    yzb := 1;
+    buy_amount := 0;
+    zt_time := "00:00:00";
     for idx in data do
     begin
-        if data[idx]['close'] <> 当日涨停价 then
-        begin
-            第一个非涨停价 := data[idx]['close'];
-        end
-        else
-        begin
-            if data[idx]['low'] <> 当日涨停价 then
-                 return array(当日涨停价, data[idx]['时间'], 5000000);
+        if data[idx]['时间'] < "09:30:00" then
+            continue;
 
-            if 第一个非涨停价 <> 0 then
+        if data[idx]['high'] <> cur_zt then
+            continue;
+
+        if data[idx]['low'] <> cur_zt or (idx > 0 and data[idx - 1]['close'] <> cur_zt) then
+        begin
+            zt_time := data[idx]['时间'];
+            for i := idx - 1 downto 0 do
             begin
-                buy_price := data[idx]['close'];
-                buy_time := data[idx]['时间'];
-                break;
+                if time_diff(zt_time, data[i]['时间']) <= 60 then
+                    buy_amount += data[i]['amount'];
+                else
+                    break;
             end
+            break;
         end
     end
-    return array(buy_price, buy_time, 5000000);
+    return array(buy_amount, zt_time);
 end
 
 function 计算自定义上市天数(stock_code, day);
