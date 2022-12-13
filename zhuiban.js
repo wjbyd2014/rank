@@ -11,17 +11,22 @@ Begin
         if not (stock_code like 'SZ|SH') then
             continue;
 
-        if stock_name like 'ST|退' then
+        if stock_name like '退' then
             continue;
+
         if not is_trade_day(day, stock_code) then
             continue;
+
         with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
         begin
+            is_zt := IsST_3(day);
+            if is_zt = 1 then
+                continue;
+
             昨日收盘价 := ref(close(), 1);
             今日涨停价 := StockZtClose(day);
-            next_day := StockEndTPrevNDay(day, -1);
-            明日涨停价 := StockZtClose(next_day);
         end
+
         if stock_code[3:4] = '30' or stock_code[3:4] = '68' then
         begin
             if count_ratio(今日涨停价, 昨日收盘价) < 15 then
@@ -29,10 +34,11 @@ Begin
         end
         else
             continue;
-            
+
         买入 := 计算买入(stock_name, stock_code, day);
         if 买入[0] = 0 then
             continue;
+
         上市天数 := 计算自定义上市天数(stock_code, day);
         上涨周期 := 寻找上涨起点(stock_name, stock_code, day, 上市天数, 3, 3);
         if 上涨周期 = 0 then
