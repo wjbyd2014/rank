@@ -328,13 +328,15 @@ begin
     end
     return ret;
 end
-function 计算原始金额(stock_name, stock_code, day, num);
+
+function 计算原始金额(stock_name, stock_code, day);
 begin
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
     begin
         当日涨停价 := StockZtClose(day);
         上市日 := FundGoMarketDate();
     end
+
     minute_amount_num := 0;
     arr_amount := array();
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_1m()) do
@@ -343,44 +345,40 @@ begin
         TimeToStr(["date"]) as "时间",
         ["close"],
         ['amount'],
-        ['open'],
+        ['high'],
         ['low']
         from markettable datekey day to day+0.99999 of DefaultStockID() end;
     end
 
-    if data[0]['low'] <> 当日涨停价 and data[0]['close'] = 当日涨停价 then
+    for idx in data do
     begin
-        arr_amount &= array(data[0]['amount'] / 3);
-        minute_amount_num += 1;
-    end
-    else
-    begin
-        for i := 0 to length(data) do
+        if data[idx]['high'] = 当日涨停价 then
         begin
-            if data[i]['close'] = 当日涨停价 then
+            if data[idx]['low'] <> 当日涨停价 or (idx > 0 and data[idx - 1]['close'] <> 当日涨停价) then
             begin
+                arr_amount &= array(data[idx]['amount'] / 3);
+                minute_amount_num += 1;
                 break;
             end
         end
-        arr_amount &= array(data[i]['amount'] / 3);
-        minute_amount_num += 1;
-
-        while length(arr_amount) < 30 do
-        begin
-            i -= 1;
-            if i < 0 then
-                break;
-            arr_amount &= array(data[i]['amount']);
-            minute_amount_num += 1;
-        end
     end
 
-    if length(arr_amount) < 30 then
+    while length(arr_amount) < 30 do
+    begin
+        idx -= 1;
+        if idx < 0 then
+            break;
+        arr_amount &= array(data[idx]['amount']);
+        minute_amount_num += 1;
+    end
+
+    if length(arr_amount) = 30 then
     begin
         当日开盘集合竞价 := 计算开盘集合竞价成交量(stock_name, stock_code, day);
-        arr_amount &= array(当日开盘集合竞价);
-        minute_amount_num += 1;
+        arr_amount[29] -= 当日开盘集合竞价;
     end
+    else
+        minute_amount_num += 1;
 
     prev_num := 1;
     str_day := DateToStr(day);
@@ -418,12 +416,14 @@ begin
             end
         end
 
-        if length(arr_amount) < 30 then
+        if length(arr_amount) = 30 then
         begin
             当日开盘集合竞价 := 计算开盘集合竞价成交量(stock_name, stock_code, prev_day);
-            arr_amount &= array(当日开盘集合竞价);
-            minute_amount_num += 1;
+            arr_amount[29] -= 当日开盘集合竞价;
         end
+        else
+            minute_amount_num += 1;
+
         prev_num += 1;
     end
 
@@ -540,17 +540,19 @@ begin
     buy_price := 0;
     buy_time := 0;
     buy_amount := 0;
+
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
     begin
         当日涨停价 := StockZtClose(day);
     end
+
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_1m()) do
     begin
         data := select
         TimeToStr(["date"]) as "时间",
         ["close"],
         ['amount'],
-        ['open'],
+        ['high'],
         ['low']
         from markettable datekey day to day+0.99999 of DefaultStockID() end;
     end
@@ -559,18 +561,11 @@ begin
     第一个非涨停价 := 0;
     for idx in data do
     begin
-        if data[idx]['close'] <> 当日涨停价 then
+        if data[idx]['high'] = 当日涨停价 then
         begin
-            第一个非涨停价 := data[idx]['close'];
-        end
-        else
-        begin
-            if data[idx]['low'] <> 当日涨停价 then
-                return array(当日涨停价, data[idx]['时间'], 0, 0);
-
-            if 第一个非涨停价 <> 0 then
+            if data[idx]['low'] <> 当日涨停价 or (idx > 0 and data[idx - 1]['close'] <> 当日涨停价) then
             begin
-                buy_price := data[idx]['close'];
+                buy_price := 当日涨停价;
                 buy_time := data[idx]['时间'];
 
                 while True do
