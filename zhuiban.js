@@ -47,7 +47,7 @@ Begin
         涨停 := 计算涨停板(stock_code, day);
         最高价 := 计算最高价(stock_name, stock_code, 上涨起点);
         涨幅 := 计算涨幅(stock_name, stock_code, day, 70);
-        原始金额 := 计算原始金额(stock_name, stock_code, day, 6);
+        原始金额 := 计算原始金额(stock_name, stock_code, day);
         if 原始金额 = 0 then
             continue;
         首板新高 := 计算100日首板新高(stock_name, stock_code, day);
