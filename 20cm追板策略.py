@@ -91,7 +91,7 @@ if __name__ == '__main__':
                                      '实际买入金额', '实际盈亏金额',
                                      '是否买入', '当日排名', '淘汰原因',
                                      '买入时间', '买入价', '卖出价', '卖出日期'],
-                                    ['买入量'], 20221108, 850)
+                                    ['买入量'], 20221212, 850)
 
     zhuiban_strategy.set_data_filter(lambda data: data['代码'][2:4] not in ['60', '00'])
     zhuiban_strategy.set_sort_data_list(zhuiban_strategy.sort_data_list_by_time)
