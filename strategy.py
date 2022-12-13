@@ -170,10 +170,6 @@ class Strategy:
         self.__gen_dates()
         for date in self.ts_dates:
             stock_data = self.stock_pool_cache.get(date, self.date_key[date])
-            if not stock_data:
-                print("stock_pool_cache.get failed, date = ", date)
-                return False
-
             data_list = list()
             for data in stock_data:
                 if self.stock_info_cache:
