@@ -17,7 +17,7 @@ class StrategyLongHuiTou(Strategy):
 
     def pre_count_buy_amount(self, data_list):
         for data in data_list:
-            data['可买金额'] = data['买入金额']
+            data['可买金额'] = data['原始金额']
 
     def select_stocks(self, data_list):
         super().select_stocks(data_list)
@@ -33,7 +33,7 @@ if __name__ == '__main__':
                                              '龙回头策略股票池.csv',
                                              {'日期': str, '代码': str, '名称': str,
                                               'is_st': int, '上市天数': float,
-                                              '买入时间': str, '买入价': float, '买入金额': float,
+                                              '买入时间': str, '买入价': float, '原始金额': float,
                                               '200日涨停数': int,
                                               'ma3上涨起始日': str,
                                               'ma3涨停数量': int,
@@ -56,7 +56,7 @@ if __name__ == '__main__':
                                              'longhuitou.js',
                                              {}, '', {}, '', {},
                                              ['日期', '代码', '名称',
-                                              '可买金额', '盈亏比', '计划买入金额', '计划买入盈亏金额', '实际买入金额', '实际盈亏金额',
+                                              '原始金额', '可买金额', '盈亏比', '计划买入金额', '计划买入盈亏金额', '实际买入金额', '实际盈亏金额',
                                               '当日排名', '买入时间', '是否买入'],
                                              ['买入量', '买入金额', '淘汰原因'], 20221208, 600)
 
