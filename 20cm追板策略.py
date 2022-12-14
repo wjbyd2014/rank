@@ -42,6 +42,7 @@ class Strategy20cm(Strategy):
         data_list.sort(key=lambda x: x['买入时间'])
         max_buy_rank = self.cm.get_config_value('买入排名上限')
         max_ztls = self.cm.get_config_value('涨停拉升')
+        min_ztls_check_rank = self.cm.get_config_value('涨停拉升最小排名')
 
         if not max_buy_rank or max_buy_rank == -1:
             return
@@ -49,7 +50,7 @@ class Strategy20cm(Strategy):
         for rank, data in enumerate(data_list):
             if data['2日涨停数'] == 0 and data['5日涨停数'] != 0:
                 data['淘汰原因'] = '涨停中断'
-            elif rank > 0 and data['涨停拉升'] > max_ztls:
+            elif rank + 1 > min_ztls_check_rank and data['涨停拉升'] > max_ztls:
                 data['淘汰原因'] = '涨停拉升'
             elif rank + 1 > max_buy_rank:
                 data['淘汰原因'] = '买入排名'
@@ -103,7 +104,9 @@ if __name__ == '__main__':
     zhuiban_strategy.add_factor2('尾部资金', [1])
 
     zhuiban_strategy.add_factor2('买入排名上限', [10])
-    zhuiban_strategy.add_factor2('涨停拉升', [5])
+    zhuiban_strategy.add_factor2('涨停拉升', [4])
+    zhuiban_strategy.add_factor2('涨停拉升最小排名', [1])
+
     # zhuiban_strategy.add_factor2('涨停板买入量放大系数', [1])
     # zhuiban_strategy.add_factor2('实际买入量缩小系数', [60])
     zhuiban_strategy.gen_factors()
