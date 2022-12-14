@@ -41,21 +41,18 @@ class Strategy20cm(Strategy):
         # data_list.sort(key=cmp_to_key(com_function))
         data_list.sort(key=lambda x: x['买入时间'])
         max_buy_rank = self.cm.get_config_value('买入排名上限')
+        max_ztls = self.cm.get_config_value('涨停拉升')
 
         if not max_buy_rank or max_buy_rank == -1:
             return
 
         for rank, data in enumerate(data_list):
-            """if rank + 1 <= 4:
-                data['计划买入金额'] = data['计划买入金额'] * 1.2
-                data['计划买入盈亏金额'] = data['盈亏比'] * data['计划买入金额'] / 100"""
-
             if data['2日涨停数'] == 0 and data['5日涨停数'] != 0:
                 data['淘汰原因'] = '涨停中断'
-
-            if rank + 1 > max_buy_rank:
-                if not data['淘汰原因']:
-                    data['淘汰原因'] = '买入排名'
+            elif rank > 0 and data['涨停拉升'] > max_ztls:
+                data['淘汰原因'] = '涨停拉升'
+            elif rank + 1 > max_buy_rank:
+                data['淘汰原因'] = '买入排名'
 
 
 def com_function(data1, data2):
@@ -91,9 +88,8 @@ if __name__ == '__main__':
                                      '实际买入金额', '实际盈亏金额',
                                      '是否买入', '当日排名', '淘汰原因',
                                      '买入时间', '买入价', '卖出价', '卖出日期'],
-                                    ['买入量'], 20221212, 850)
+                                    ['买入量'], 20221211, 850)
 
-    zhuiban_strategy.set_data_filter(lambda data: data['代码'][2:4] not in ['60', '00'])
     zhuiban_strategy.set_sort_data_list(zhuiban_strategy.sort_data_list_by_time)
 
     zhuiban_strategy.init()
@@ -107,6 +103,7 @@ if __name__ == '__main__':
     zhuiban_strategy.add_factor2('尾部资金', [1])
 
     zhuiban_strategy.add_factor2('买入排名上限', [10])
+    zhuiban_strategy.add_factor2('涨停拉升', [5])
     # zhuiban_strategy.add_factor2('涨停板买入量放大系数', [1])
     # zhuiban_strategy.add_factor2('实际买入量缩小系数', [60])
     zhuiban_strategy.gen_factors()
