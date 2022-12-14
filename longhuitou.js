@@ -36,6 +36,10 @@ Begin
             if cur_high <> cur_zt then
                 continue;
 
+            yzb := StockIsZt2(day);
+            if yzb = 1 then
+                continue;
+
             ma3上涨起始日 := count_ma_start_day(day, 3);
             str_ma3上涨起始日 := DateToStr(ma3上涨起始日);
             ma3涨停 := count_ma3_zt(stock_name, stock_code, day, ma3上涨起始日);
@@ -373,18 +377,21 @@ begin
         from tradetable datekey day to day+0.99999 of DefaultStockID() end;
     end
 
-    yzb := 1;
     buy_amount := 0;
     zt_time := "00:00:00";
+    first_idx := 0;
     for idx in data do
     begin
         if data[idx]['时间'] < "09:30:00" then
+        begin
+            first_idx := idx;
+            continue;
+        end
+
+        if idx = first_idx + 1 then
             continue;
 
-        if data[idx]['high'] <> cur_zt then
-            continue;
-
-        if data[idx]['low'] <> cur_zt or (idx > 0 and data[idx - 1]['close'] <> cur_zt) then
+        if data[idx]['high'] = cur_zt and data[idx - 1]['close'] <> cur_zt then
         begin
             zt_time := data[idx]['时间'];
             for i := idx - 1 downto 0 do
