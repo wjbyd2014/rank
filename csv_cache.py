@@ -53,12 +53,14 @@ class ReadWriteDateCsvCache:
         self.fields_dict = fields_dict
         self.fd = None
         self.writer = None
+        self.reload = False
 
     def build_cache(self):
         if not os.path.exists(self.csv_file_name):
             return
 
         with open(self.csv_file_name, mode='r', newline='') as csv_file:
+            self.reload = True
             reader = csv.DictReader(csv_file)
             for row in reader:
                 key = row['key']
@@ -82,7 +84,7 @@ class ReadWriteDateCsvCache:
         if date in self.cache:
             return self.cache[date]
         else:
-            if self.cache:
+            if self.reload:
                 return list()
             print(f'{self.name} downloading {date}')
             js_params = {'day': date}
