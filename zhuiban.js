@@ -25,6 +25,12 @@ Begin
 
             昨日收盘价 := ref(close(), 1);
             今日涨停价 := StockZtClose(day);
+            今日最高价 := StockHigh4(day);
+            if 今日最高价 <> 今日涨停价 then
+                continue;
+            yzb := StockIsZt2(day);
+            if yzb = 1 then
+                continue;
         end
 
         if stock_code[3:4] = '30' or stock_code[3:4] = '68' then
@@ -35,7 +41,7 @@ Begin
         else
             continue;
 
-        买入 := 计算买入(stock_name, stock_code, day);
+        买入 := 计算买入2(stock_name, stock_code, day);
         if 买入[0] = 0 then
             continue;
 
@@ -546,6 +552,77 @@ begin
             num60 := highest;
     end
     return array(num3, num5, num7, num10, num15, num30, num60);
+end
+
+function 计算买入2(stock_name, stock_code, day);
+begin
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
+    begin
+        当日涨停价 := StockZtClose(day);
+        昨日收盘价 := ref(close(), 1);
+    end
+
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_3s()) do
+    begin
+        data := select
+        TimeToStr(["date"]) as "时间",
+        ["close"],
+        ['high'],
+        ['amount']
+        from tradetable datekey day to day+0.99999 of DefaultStockID() end;
+    end
+
+    buy_time := "00:00:00";
+    first_idx := 0;
+    for idx in data do
+    begin
+        if data[idx]['时间'] < "09:30:00" then
+        begin
+            first_idx := idx;
+            continue;
+        end
+
+        if idx = first_idx + 1 then
+            continue;
+
+        if data[idx]['high'] = 当日涨停价 and data[idx - 1]['close'] <> 当日涨停价 then
+        begin
+            buy_price := 当日涨停价;
+            buy_time := data[idx]['时间'];
+            idx2 := idx - 1;
+            last_minute := buy_time[4:5];
+            last_minute_close := 当日涨停价;
+
+            while idx2 > 0 do
+            begin
+                if idx2 = first_idx + 1 then
+                begin
+                    last_minute_close := data[idx2]['close'];
+                    break;
+                end
+
+                cur_time := data[idx2]['时间'];
+                cur_minute := cur_time[4:5];
+                if cur_minute <> last_minute then
+                begin
+                    //echo 'stock_code=', stock_code, ',cur_time=', cur_time, ',last_minute_close=',last_minute_close,',cur_close=',data[idx2]['close'];
+                    if data[idx2]['close'] > last_minute_close then
+                        break;
+
+                    last_time := data[idx2]['时间'];
+                    last_minute := last_time[4:5];
+                    last_minute_close := data[idx2]['close'];
+                end
+                idx2 -= 1;
+            end
+
+            rate1 := count_ratio(当日涨停价, 昨日收盘价);
+            rate2 := count_ratio(last_minute_close, 昨日收盘价);
+            涨停拉升 := rate1 - rate2;
+            break;
+        end
+    end
+    return array(buy_price, buy_time, 0, 涨停拉升);
 end
 
 function 计算买入(stock_name, stock_code, day);
