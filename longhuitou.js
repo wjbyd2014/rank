@@ -391,7 +391,13 @@ begin
         if idx = first_idx + 1 then
             continue;
 
+        b1 := false;
         if data[idx]['high'] = cur_zt and data[idx - 1]['close'] <> cur_zt then
+            b1 := true;
+        b2 := false;
+        if idx <> length(data) - 1 and data[idx]['low'] <> cur_zt and data[idx + 1]['high'] = cur_zt then
+            b2 := true;
+        if b1 or b2 then
         begin
             zt_time := data[idx]['时间'];
             for i := idx - 1 downto 0 do
