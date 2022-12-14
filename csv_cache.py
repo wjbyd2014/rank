@@ -82,6 +82,8 @@ class ReadWriteDateCsvCache:
         if date in self.cache:
             return self.cache[date]
         else:
+            if self.cache:
+                return list()
             print(f'{self.name} downloading {date}')
             js_params = {'day': date}
             for param_name, param_value in self.other_params.items():
