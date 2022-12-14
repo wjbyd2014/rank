@@ -377,8 +377,12 @@ begin
         idx -= 1;
         if idx < 0 then
             break;
-        arr_amount &= array(data[idx]['amount']);
-        minute_amount_num += 1;
+
+        if data[idx]['close'] <> 当日涨停价 then
+        begin
+            arr_amount &= array(data[idx]['amount']);
+            minute_amount_num += 1;
+        end
     end
 
     if length(arr_amount) = 30 then
