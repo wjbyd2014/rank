@@ -18,9 +18,21 @@ class StrategyLongHuiTou(Strategy):
     def pre_count_buy_amount(self, data_list):
         for data in data_list:
             data['可买金额'] = data['原始金额']
+            data['原始金额'] = round(data['原始金额'] / 10000, 2)
+            if data['is_st'] == 1:
+                if data['可买金额'] > 200 * 10000:
+                    data['可买金额'] = 200 * 10000
+            else:
+                data['可买金额'] *= 0.5
+                if data['可买金额'] > 2000 * 10000:
+                    data['可买金额'] = 2000 * 10000
 
     def select_stocks(self, data_list):
         super().select_stocks(data_list)
+
+        for data in data_list:
+            if data['本轮ma3第几次触发'] > self.cm.get_config_value('最大本轮触发次数'):
+                data['淘汰原因'] = '触发次数'
 
     def sort_data_list_by_time(self, data_list):
         data_list.sort(key=lambda x: x['买入时间'])
@@ -38,6 +50,7 @@ if __name__ == '__main__':
                                               'ma3上涨起始日': str,
                                               'ma3涨停数量': int,
                                               'ma3最高价涨停数量': int,
+                                              '本轮ma3第几次触发': int,
                                               '4日内最低价跌停次数': int,
                                               '本日涨停价和10日内最高最高价涨幅': float,
                                               '10日内最高最高价日期': str,
@@ -66,10 +79,11 @@ if __name__ == '__main__':
     longhuitou_strategy.load_data()
     """factors = ConfigManager.linspace2(yinxiang_strategy.get_data(), '开盘涨幅', 10)
     yinxiang_strategy.add_factor2('开盘价涨幅范围', factors)"""
-    longhuitou_strategy.add_factor2('每日资金总量', [100000])
-    longhuitou_strategy.add_factor2('单只股票购买上限', [1600])
+    longhuitou_strategy.add_factor2('每日资金总量', [6000])
+    longhuitou_strategy.add_factor2('单只股票购买上限', [2000])
     longhuitou_strategy.add_factor2('买入比', [100])
     longhuitou_strategy.add_factor2('尾部资金', [1])
+    longhuitou_strategy.add_factor2('最大本轮触发次数', [5])
     longhuitou_strategy.gen_factors()
 
     len_factors = longhuitou_strategy.len_factors()
