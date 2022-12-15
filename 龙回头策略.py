@@ -29,7 +29,6 @@ class StrategyLongHuiTou(Strategy):
 
     def select_stocks(self, data_list):
         super().select_stocks(data_list)
-
         for data in data_list:
             if data['本轮ma3第几次触发'] > self.cm.get_config_value('最大本轮触发次数'):
                 data['淘汰原因'] = '触发次数'
@@ -46,7 +45,6 @@ if __name__ == '__main__':
                                              {'日期': str, '代码': str, '名称': str,
                                               'is_st': int, '上市天数': float,
                                               '买入时间': str, '买入价': float, '原始金额': float,
-                                              '涨停拉升': float, '涨停拉升时间': float,
                                               '200日涨停数': int,
                                               'ma3上涨起始日': str,
                                               'ma3涨停数量': int,
