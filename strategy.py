@@ -1,3 +1,4 @@
+import copy
 from abc import abstractmethod
 from csv_cache import *
 from tinysoft import *
@@ -120,7 +121,7 @@ class Strategy:
             total_use_money = 0
             earn_money = dict()
             for date in self.ts_dates:
-                data_list_copy = self.date_to_stock_data[date].copy()
+                data_list_copy = copy.deepcopy(self.date_to_stock_data[date])
                 self.pre_count_buy_amount(data_list_copy)
                 self.__count_buy_amount(data_list_copy)
                 self.post_count_buy_amount(data_list_copy)
