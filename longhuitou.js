@@ -21,7 +21,7 @@ Begin
 
         with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
         begin
-            is_zt := IsST_3(day);
+            is_st := IsST_3(day);
             prev_day := StockEndTPrevNDay(day, 1);
             if prev_day = 0 then
                 continue;
@@ -49,6 +49,8 @@ Begin
 
             dt_num4 := count_dt(stock_name, stock_code, day, 4);
             上次涨停信息 := count_last_zt(stock_name, stock_code ,day, 7);
+
+            触发次数 := 计算触发次数(stock_name, stock_code, day, ma3上涨起始日);
         end
 
         买入 := 计算买入(stock_name, stock_code, day, cur_zt);
@@ -56,7 +58,7 @@ Begin
             continue;
 
         涨停板 := 计算涨停板(stock_name, stock_code, day);
-        if is_zt = 0 then
+        if is_st = 0 then
         begin
             大涨 := 计算大涨(stock_name, stock_code, day);
             if 大涨[6] = 0 then
@@ -73,13 +75,14 @@ Begin
             '4日内最低价跌停次数':dt_num4,
             'ma3上涨起始日':str_ma3上涨起始日,
             'ma3涨停数量':ma3涨停[0], 'ma3最高价涨停数量':ma3涨停[1],
+            '本轮ma3第几次触发':触发次数,
             '200日涨停数':涨停板[4],
             '7日内上次涨停日期':上次涨停信息[0],
             '上次涨停距今几日':上次涨停信息[1],
             '上次涨停距今最高价最高涨幅':上次涨停信息[2],
             '上次涨停距今累计涨幅':上次涨停信息[3],
             '上次涨停距今阳线个数':上次涨停信息[4],
-            'is_st':is_zt, '上市天数':上市天数,
+            'is_st':is_st, '上市天数':上市天数,
             '10日涨停数':涨停板[0], '20日涨停数':涨停板[1],
             '30日涨停数':涨停板[2], '40日涨停数':涨停板[3],
             '10日最大大涨幅度':大涨[0], '10日最大大涨日期':大涨[1],
@@ -206,6 +209,41 @@ begin
         i += 1;
     end
     return array(num1, num2);
+end
+
+function 计算触发次数(stock_name, stock_code, day, begin_day);
+begin
+    上市日 := FundGoMarketDate();
+    i := 1;
+    ret := 1;
+    while True do
+    begin
+        one_day := StockEndTPrevNDay(day, i);
+        str_one_day := DateToStr(one_day);
+
+        if DateToInt(one_day) < 上市日 then
+            break;
+
+        if one_day < begin_day then
+            break;
+
+        prev_day := StockEndTPrevNDay(day, i + 1);
+        if prev_day = 0 then
+            break;
+
+        if DateToInt(prev_day) < 上市日 then
+            break;
+
+        yzb := StockIsZt2(day);
+        one_day_high := StockHigh4(one_day);
+        one_day_zt := StockZtClose(one_day);
+        prev_day_high := StockHigh4(prev_day);
+        prev_day_zt := StockZtClose(prev_day);
+        if yzb = 0 and one_day_high = one_day_zt and prev_day_high <> prev_day_zt then
+            ret += 1;
+        i += 1;
+    end
+    return ret;
 end
 
 function count_ma_start_day(day, num);
