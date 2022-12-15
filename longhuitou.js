@@ -70,6 +70,7 @@ Begin
         上市天数 := 计算自定义上市天数(stock_code, day);
         ret &= array(('名称':stock_name, '代码':stock_code,
             '买入时间':买入[1], '买入价':cur_zt, '原始金额':买入[0],
+            '涨停拉升':买入[2], '涨停拉升时间':买入[3],
             '本日涨停价和10日内最高最高价涨幅':highest_incr,
             '10日内最高最高价日期':highest10[1],
             '4日内最低价跌停次数':dt_num4,
@@ -404,6 +405,11 @@ end
 
 function 计算买入(stock_name, stock_code, day, cur_zt);
 begin
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_day()) do
+    begin
+        昨日收盘价 := ref(close(), 1);
+    end
+
     with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_3s()) do
     begin
         data := select
@@ -445,10 +451,45 @@ begin
                 else
                     break;
             end
+
+            idx2 := idx - 1;
+            last_minute := zt_time[4:5];
+            last_minute_close := cur_zt;
+            start_zt_time := '';
+            while idx2 > 0 do
+            begin
+                if idx2 = first_idx + 1 then
+                begin
+                    last_minute_close := data[idx2]['close'];
+                    start_zt_time := '09:30:00';
+                    break;
+                end
+
+                cur_time := data[idx2]['时间'];
+                cur_minute := cur_time[4:5];
+                if cur_minute <> last_minute then
+                begin
+                    if data[idx2]['close'] > last_minute_close then
+                    begin
+                        start_zt_time := data[idx2]['时间'];
+                        break;
+                    end
+
+                    last_time := data[idx2]['时间'];
+                    last_minute := last_time[4:5];
+                    last_minute_close := data[idx2]['close'];
+                end
+                idx2 -= 1;
+            end
+
+            rate1 := count_ratio(cur_zt, 昨日收盘价);
+            rate2 := count_ratio(last_minute_close, 昨日收盘价);
+            涨停拉升 := rate1 - rate2;
+            涨停拉升时间 := time_diff(zt_time, start_zt_time) / 60;
             break;
         end
     end
-    return array(buy_amount, zt_time);
+    return array(buy_amount, zt_time, 涨停拉升, 涨停拉升时间);
 end
 
 function 计算自定义上市天数(stock_code, day);
