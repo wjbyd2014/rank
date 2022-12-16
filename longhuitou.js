@@ -57,6 +57,8 @@ Begin
         if 买入[0] = 0 then
             continue;
 
+        最高分钟线成交额 := 计算之前最高分钟线成交额(stock_name, stock_code, day, 买入[1]);
+
         涨停板 := 计算涨停板(stock_name, stock_code, day);
         if is_st = 0 then
         begin
@@ -70,7 +72,8 @@ Begin
         上市天数 := 计算自定义上市天数(stock_code, day);
         ret &= array(('名称':stock_name, '代码':stock_code,
             '买入时间':买入[1], '买入价':cur_zt, '原始金额':买入[0],
-            '涨停拉升':买入[2], '涨停拉升时间':买入[3],
+            '涨停盘口成交额':买入[2], '涨停分钟成交额':买入[3],
+            '涨停前最高分钟线成交额':最高分钟线成交额,
             '本日涨停价和10日内最高最高价涨幅':highest_incr,
             '10日内最高最高价日期':highest10[1],
             '4日内最低价跌停次数':dt_num4,
@@ -414,14 +417,13 @@ begin
     begin
         data := select
         TimeToStr(["date"]) as "时间",
-        ["close"],
-        ['low'],
-        ['high'],
-        ['amount']
+        *
         from tradetable datekey day to day+0.99999 of DefaultStockID() end;
     end
 
     buy_amount := 0;
+    buy_amount1 := 0;
+    buy_amount2 := 0;
     zt_time := "00:00:00";
     first_idx := 0;
     for idx in data do
@@ -443,11 +445,31 @@ begin
             b2 := true;
         if b1 or b2 then
         begin
+            if data[idx]['时间'] >= "14:57:00" then
+                break;
+
             zt_time := data[idx]['时间'];
+
+            for i := idx - 1 downto 0 do
+            begin
+                if data[i]['sale5'] = cur_zt then
+                    buy_amount1 := data[i]['sc5'];
+                else if data[i]['sale4'] = cur_zt then
+                    buy_amount1 := data[i]['sc4'];
+                else if data[i]['sale3'] = cur_zt then
+                    buy_amount1 := data[i]['sc3'];
+                else if data[i]['sale2'] = cur_zt then
+                    buy_amount1 := data[i]['sc2'];
+                else if data[i]['sale1'] = cur_zt then
+                    buy_amount1 := data[i]['sc1'];
+                if buy_amount1 <> 0 then
+                    break;
+            end
+
             for i := idx - 1 downto 0 do
             begin
                 if time_diff(zt_time, data[i]['时间']) <= 60 then
-                    buy_amount += data[i]['amount'];
+                    buy_amount2 += data[i]['amount'];
                 else
                     break;
             end
@@ -486,10 +508,36 @@ begin
             rate2 := count_ratio(last_minute_close, 昨日收盘价);
             涨停拉升 := rate1 - rate2;
             涨停拉升时间 := time_diff(zt_time, start_zt_time) / 60;
+
+            if buy_amount1 <> 0 then
+                buy_amount := buy_amount1;
+            else
+                buy_amount := buy_amount2;
             break;
         end
     end
-    return array(buy_amount, zt_time, 涨停拉升, 涨停拉升时间);
+    return array(buy_amount, zt_time, buy_amount1, buy_amount2);
+end
+
+function 计算之前最高分钟线成交额(stock_name, stock_code, day, zt_time);
+begin
+    with *,array(pn_Stock():stock_code, pn_date():day, pn_rate():2, pn_rateday():day, PN_Cycle():cy_1m()) do
+    begin
+        data := select
+        TimeToStr(["date"]) as "时间",
+        ['amount']
+        from markettable datekey day to day+0.99999 of DefaultStockID() end;
+    end
+
+    max_amount := -1;
+    for idx in data do
+    begin
+        if data[idx]['时间'] >= zt_time then
+            break;
+        if data[idx]['amount'] > max_amount then
+            max_amount := data[idx]['amount'];
+    end
+    return max_amount;
 end
 
 function 计算自定义上市天数(stock_code, day);
